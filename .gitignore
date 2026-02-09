@@ -1,0 +1,30 @@
+
+# 자동 생성되는 빌드 파일 및 에디터 임시 파일 무시
+# 빌드 출력
+/build/
+*.o
+*.elf
+*.bin
+*.img
+*.iso
+*.map
+*.lst
+
+# 링커 / 의존성 파일
+*.d
+*.dSYM/
+
+# 에디터, IDE, OS 임시 파일
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# 로그 / 코어 덤프
+*.log
+core
+
+# 기타
+tags
+
