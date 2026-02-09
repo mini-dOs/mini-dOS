@@ -59,6 +59,8 @@ gdt64_desc:
   .word gdt64_end - gdt64 - 1
   .long gdt64
 
+.section .note.GNU-stack,"",%progbits
+
 .section .text
 .global _start
 .type _start, @function
@@ -66,7 +68,20 @@ gdt64_desc:
 .code32
 _start:
   cli
-  mov $stack_top, %esp
+  cld
+  /* ES = DS (GRUB may leave ES undefined) */
+  push %ds
+  pop  %es
+  /* Zero BSS so C globals are 0 and we do not rely on loader */
+  mov  $__bss_end, %ecx
+  mov  $__bss_start, %edi
+  sub  %edi, %ecx
+  xor  %eax, %eax
+  rep  stosb
+  mov  $stack_top, %esp
+  /* Save Multiboot magic (EAX) and info pointer (EBX) for kernel_main */
+  push %ebx
+  push %eax
 
   lgdt gdt64_desc
 
@@ -113,6 +128,11 @@ start64:
 
   mov $stack_top, %rsp
   and $-16, %rsp
+  /* Stack has magic (low 4B) then info (high 4B) in one 8B slot; pop and split */
+  pop  %rdi
+  mov  %rdi, %rsi
+  shr  $32, %rsi
+  /* RDI = (info<<32)|magic => %edi = magic, %rsi = info */
 
   call kernel_main
 

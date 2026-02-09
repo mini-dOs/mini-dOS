@@ -29,8 +29,13 @@ static void serial_write(const char* s) {
     for (; *s; s++) serial_write_char(*s);
 }
 
-void kernel_main(void) {
+/* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
+void kernel_main(uint32_t multiboot_magic, uint32_t multiboot_info) {
+    (void)multiboot_info; /* use later for memory map, cmdline, etc. */
     serial_init();
     serial_write("Hello from x86_64 kernel!\r\n");
+    if (multiboot_magic == 0x36d76289) {
+        serial_write("Multiboot2 magic OK.\r\n");
+    }
     for (;;) __asm__ __volatile__("hlt");
 }
