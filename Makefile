@@ -2,24 +2,35 @@
 CC  := x86_64-elf-gcc
 AS  := x86_64-elf-as
 
-CFLAGS  := -ffreestanding -m64 -fno-stack-protector -fno-pie -O2 -Wall -Wextra
-LDFLAGS := -ffreestanding -nostdlib -Wl,--build-id=none
+CFLAGS  := -ffreestanding -m64 -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra
+LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none
 
 BUILD := build
 SRC   := src
+
+OBJS :=	$(BUILD)/boot.o \
+	$(BUILD)/kernel.o \
+	$(BUILD)/gdt.o \
+	$(BUILD)/lgdt_asm.o
 
 .PHONY: all clean iso run
 
 all: $(BUILD)/kernel.elf
 
-$(BUILD)/kernel.elf: $(BUILD)/boot.o $(BUILD)/kernel.o
-	$(CC) -T $(SRC)/linker.ld -o $@ $(LDFLAGS) $(BUILD)/boot.o $(BUILD)/kernel.o -lgcc
+$(BUILD)/kernel.elf: $(OBJS)
+	$(CC) -T linker.ld -o $@ $(LDFLAGS) $(OBJS) -lgcc
 
-$(BUILD)/boot.o: $(SRC)/boot.s | $(BUILD)
-	$(AS) $(SRC)/boot.s -o $@
+$(BUILD)/boot.o: $(SRC)/boot/boot.s | $(BUILD)
+	$(AS) $(SRC)/boot/boot.s -o $@
 
-$(BUILD)/kernel.o: $(SRC)/kernel.c | $(BUILD)
-	$(CC) $(CFLAGS) -c $(SRC)/kernel.c -o $@
+$(BUILD)/kernel.o: $(SRC)/kernel/kernel.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $(SRC)/kernel/kernel.c -o $@
+
+$(BUILD)/gdt.o: $(SRC)/kernel/gdt.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $(SRC)/kernel/gdt.c -o $@
+
+$(BUILD)/lgdt_asm.o: $(SRC)/kernel/lgdt_asm.S | $(BUILD)
+	$(AS) --64 $(SRC)/kernel/lgdt_asm.S -o $@
 
 $(BUILD):
 	mkdir -p $(BUILD)
