@@ -5,8 +5,6 @@
 
 .section .text
 
-; void gdtr_load(uint64_t gdtr_address)
-; The address of GDTR is passed to the RDI register
 gdtr_load:
 	lgdt [rdi]
 
