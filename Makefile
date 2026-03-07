@@ -11,7 +11,8 @@ SRC   := src
 OBJS :=	$(BUILD)/boot.o \
 	$(BUILD)/kernel.o \
 	$(BUILD)/gdt.o \
-	$(BUILD)/lgdt_asm.o
+	$(BUILD)/lgdt_asm.o \
+	$(BUILD)/ltr_asm.o
 
 .PHONY: all clean iso run
 
@@ -31,6 +32,9 @@ $(BUILD)/gdt.o: $(SRC)/kernel/gdt.c | $(BUILD)
 
 $(BUILD)/lgdt_asm.o: $(SRC)/kernel/lgdt_asm.S | $(BUILD)
 	$(AS) --64 $(SRC)/kernel/lgdt_asm.S -o $@
+
+$(BUILD)/ltr_asm.o: $(SRC)/kernel/ltr_asm.S | $(BUILD)
+	$(AS) --64 $(SRC)/kernel/ltr_asm.S -o $@
 
 $(BUILD):
 	mkdir -p $(BUILD)
