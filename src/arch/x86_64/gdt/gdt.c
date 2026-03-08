@@ -1,4 +1,6 @@
-#include "gdt.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <gdt.h>
 
 extern void gdtr_load(uint64_t gdtr_address);
 extern void tss_load(uint16_t tss_address);
@@ -7,7 +9,7 @@ struct GDT_ENTRY	gdt_entry[7];
 struct TSS_ENTRY	tss_entry;
 struct GDTR		gdtr;
 
-void gdtr_init(void) {
+void gdt_init(void) {
 	// Define 10 Bytes GDTR Structure
 	gdtr.limit = (sizeof(struct GDT_ENTRY) * 7) - 1;	// 39 Bytes
 	gdtr.base = (uint64_t)&gdt_entry;

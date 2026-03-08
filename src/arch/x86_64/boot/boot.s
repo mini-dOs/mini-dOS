@@ -129,12 +129,14 @@ start64:
   mov $stack_top, %rsp
   and $-16, %rsp
   /* Stack has magic (low 4B) then info (high 4B) in one 8B slot; pop and split */
-  pop  %rdi
-  mov  %rdi, %rsi
-  shr  $32, %rsi
+  pop %rax        # magic
+  pop %rbx        # info
+
+  mov %eax, %edi
+  mov %ebx, %esi
   /* RDI = (info<<32)|magic => %edi = magic, %rsi = info */
 
-  call kernel_main
+  call kmain
 
 .hang:
   hlt
