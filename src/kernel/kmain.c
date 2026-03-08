@@ -33,7 +33,7 @@ static void serial_write(const char* s) {
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     (void)multiboot_info; /* use later for memory map, cmdline, etc. */
-    gdt_init();
+    init_arch_tables();
     serial_init();
     serial_write("Hello from x86_64 kernel!\r\n");
     if (multiboot_magic == 0x36d76289) {
