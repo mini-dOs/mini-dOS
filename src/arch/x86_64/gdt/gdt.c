@@ -9,6 +9,10 @@ struct GDT_ENTRY	gdt_entry[7];
 struct TSS_ENTRY	tss_entry;
 struct GDTR		gdtr;
 
+/* Dedicated stack for #DF (vector 8) via IST1 */
+#define DOUBLE_FAULT_STACK_SIZE 4096
+static uint8_t double_fault_stack[DOUBLE_FAULT_STACK_SIZE] __attribute__((aligned(16)));
+
 void gdt_init(void) {
 	// Define 10 Bytes GDTR Structure
 	gdtr.limit = (sizeof(struct GDT_ENTRY) * 7) - 1;	// 39 Bytes
@@ -33,11 +37,13 @@ void gdt_init(void) {
 	// GDT[6] == TSS[1]
 	gdt_tss_descriptor_set_entry(5, (uint64_t)&tss_entry, sizeof(struct TSS_ENTRY) - 1, 0x89, 0x00);
 
-	// Initialize TSS Structure
+	/* Zero TSS, then set IST1 = top of double_fault_stack.
+	 * Order matters: tss_set_entry() must run before ist1 assignment.
+	 * TSS descriptor (GDT[5:6]) already points to &tss_entry above,
+	 * but the CPU reads IST1 only at interrupt time, so setting it
+	 * before tss_load() is sufficient. */
 	tss_set_entry(&tss_entry);
-	// We need to fill real stack address into TSS Structure's Entries
-	
-	// Between here
+	tss_entry.ist1 = (uint64_t)(double_fault_stack + DOUBLE_FAULT_STACK_SIZE);
 
 
 	// GDTR load and segment register update
