@@ -20,7 +20,9 @@ gdtr_load:
 	lea rax, [rip + .reload_cs]
 	push rax
 
-	lretq
+	retfq
 
 .reload_cs:
 	ret
+
+.section .note.GNU-stack,"",%progbits
