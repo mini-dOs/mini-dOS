@@ -9,3 +9,5 @@ tss_load:
 	ltr di
 
 	ret
+
+.section .note.GNU-stack,"",%progbits

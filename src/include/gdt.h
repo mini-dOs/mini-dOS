@@ -38,7 +38,7 @@ struct GDTR {
 	uint64_t	base;
 } __attribute__((packed));
 
-void gdtr_init(void);
+void gdt_init(void);
 void gdt_set_entry(int idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t attributes);
 void tss_set_entry(struct TSS_ENTRY* tss_entry_ptr);
 void gdt_tss_descriptor_set_entry(int idx, uint64_t base, uint32_t limit, uint8_t access, uint8_t attributes);

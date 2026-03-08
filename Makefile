@@ -1,43 +1,84 @@
-# Cross-compiler for x86_64 bare metal
-CC  := x86_64-elf-gcc
-AS  := x86_64-elf-as
+# ---------------------------------
+# toolchain
+# ---------------------------------
 
-CFLAGS  := -ffreestanding -m64 -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra
-LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none
+CC := x86_64-elf-gcc
+AS := x86_64-elf-as
 
+SRC := src
 BUILD := build
-SRC   := src
 
-OBJS :=	$(BUILD)/boot.o \
-	$(BUILD)/kernel.o \
-	$(BUILD)/gdt.o \
-	$(BUILD)/lgdt_asm.o \
-	$(BUILD)/ltr_asm.o
+CFLAGS := -ffreestanding -m64 -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra -I $(SRC)/include
+LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none -Wl,-z,noexecstack
+
+
+# ---------------------------------
+# source discovery
+# ---------------------------------
+
+C_SOURCES := $(shell find $(SRC) -name "*.c")
+ASM_SOURCES_S := $(shell find $(SRC) -name "*.S")
+ASM_SOURCES_s := $(shell find $(SRC) -name "*.s")
+
+
+# ---------------------------------
+# object files
+# ---------------------------------
+
+C_OBJS := $(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(C_SOURCES))
+ASM_OBJS := $(patsubst $(SRC)/%.S,$(BUILD)/%.o,$(ASM_SOURCES_S))
+ASM_OBJS += $(patsubst $(SRC)/%.s,$(BUILD)/%.o,$(ASM_SOURCES_s))
+
+OBJS := $(C_OBJS) $(ASM_OBJS)
+
+
+# ---------------------------------
+# targets
+# ---------------------------------
 
 .PHONY: all clean iso run
 
 all: $(BUILD)/kernel.elf
 
+
+# ---------------------------------
+# link kernel
+# ---------------------------------
+
 $(BUILD)/kernel.elf: $(OBJS)
 	$(CC) -T linker.ld -o $@ $(LDFLAGS) $(OBJS) -lgcc
 
-$(BUILD)/boot.o: $(SRC)/boot/boot.s | $(BUILD)
-	$(AS) $(SRC)/boot/boot.s -o $@
 
-$(BUILD)/kernel.o: $(SRC)/kernel/kernel.c | $(BUILD)
-	$(CC) $(CFLAGS) -c $(SRC)/kernel/kernel.c -o $@
+# ---------------------------------
+# compile C
+# ---------------------------------
 
-$(BUILD)/gdt.o: $(SRC)/kernel/gdt.c | $(BUILD)
-	$(CC) $(CFLAGS) -c $(SRC)/kernel/gdt.c -o $@
+$(BUILD)/%.o: $(SRC)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/lgdt_asm.o: $(SRC)/kernel/lgdt_asm.S | $(BUILD)
-	$(AS) --64 $(SRC)/kernel/lgdt_asm.S -o $@
 
-$(BUILD)/ltr_asm.o: $(SRC)/kernel/ltr_asm.S | $(BUILD)
-	$(AS) --64 $(SRC)/kernel/ltr_asm.S -o $@
+# ---------------------------------
+# compile preprocessed asm (.S)
+# ---------------------------------
 
-$(BUILD):
-	mkdir -p $(BUILD)
+$(BUILD)/%.o: $(SRC)/%.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+# ---------------------------------
+# compile raw asm (.s)
+# ---------------------------------
+
+$(BUILD)/%.o: $(SRC)/%.s
+	@mkdir -p $(dir $@)
+	$(AS) $< -o $@
+
+
+# ---------------------------------
+# ISO build
+# ---------------------------------
 
 $(BUILD)/myos.iso: $(BUILD)/kernel.elf
 	cp $(BUILD)/kernel.elf isodir/boot/kernel.elf
@@ -45,13 +86,24 @@ $(BUILD)/myos.iso: $(BUILD)/kernel.elf
 
 iso: $(BUILD)/myos.iso
 
+
+# ---------------------------------
+# run
+# ---------------------------------
+
 run: $(BUILD)/myos.iso
 	qemu-system-x86_64 \
 	  -m 256M \
 	  -cdrom $(BUILD)/myos.iso \
 	  -bios /usr/share/OVMF/OVMF_CODE.fd \
 	  -serial stdio \
+	  -no-shutdown \
 	  -no-reboot
+
+
+# ---------------------------------
+# clean
+# ---------------------------------
 
 clean:
 	rm -rf $(BUILD)

@@ -1,13 +1,144 @@
 # mini-dOs
 
-## 📂 프로젝트 구조 (Project Structure)
+x86_64 아키텍처를 대상으로 하는 **미니 운영체제 커널 프로젝트**입니다.
+GRUB + Multiboot2를 사용해 부팅하며, Long Mode로 진입한 뒤 C 커널로 제어를 전달합니다.
 
-본 프로젝트의 주요 폴더 및 파일 구성은 다음과 같습니다.
+현재 목표:
 
-| 이름 | 정체 | 역할 | 중요도 |
-| :--- | :--- | :--- | :--- |
-| **`src/`** | **코드의 고향** | 모든 **C언어**($*.c$)와 **어셈블리어**($*.S$) 소스 코드가 위치하는 핵심 폴더. | **최상** |
-| **`Makefile`** | **빌드 스크립트** | 소스 코드를 컴파일하고 연결하여 최종 커널 이미지를 만드는 자동화 스크립트. | **상** |
-| **`build/`** | **출력물 저장소** | 컴파일 과정에서 생성되는 오브젝트 파일과 최종 바이너리가 저장되는 공간. | 중 |
-| **`isodir/`** | **배포 준비 폴더** | 완성된 커널을 ISO 이미지로 만들기 위해 GRUB 설정 등과 함께 임시로 모아두는 곳. | 중 |
-| **`README.md`** | **프로젝트 명세서** | 프로젝트의 구조와 실행 방법 등을 기록합시다. | 하 |
+* GRUB 기반 부팅
+* x86_64 Long Mode 진입
+* GDT 초기화
+* 기본 커널 실행 환경 구축
+
+---
+
+# 📂 프로젝트 구조 (Project Structure)
+
+```
+.
+├── build
+├── compile_flags.txt
+├── isodir
+│   └── boot
+│       └── grub
+│           └── grub.cfg
+├── linker.ld
+├── Makefile
+├── README.md
+└── src
+    ├── arch
+    │   └── x86_64
+    │       ├── boot
+    │       │   └── boot.s
+    │       ├── gdt
+    │       │   ├── gdt.c
+    │       │   ├── lgdt_asm.S
+    │       │   └── ltr_asm.S
+    │       └── idt
+    ├── drivers
+    ├── include
+    │   └── gdt.h
+    ├── kernel
+    │   └── kmain.c
+    └── mm
+```
+
+---
+
+# 주요 디렉터리 설명
+
+| 경로                        | 역할                                    |
+| ------------------------- | ------------------------------------- |
+| **src/**                  | 커널의 모든 소스 코드가 위치하는 루트 디렉터리            |
+| **src/arch/**             | CPU 아키텍처 의존 코드                        |
+| **src/arch/x86_64/**      | x86_64 전용 구현                          |
+| **src/arch/x86_64/boot/** | 부트 엔트리 코드 (Multiboot2 → Long Mode 전환) |
+| **src/arch/x86_64/gdt/**  | GDT 및 TSS 초기화 코드                      |
+| **src/arch/x86_64/idt/**  | Interrupt Descriptor Table 관련 코드      |
+| **src/kernel/**           | 아키텍처와 독립적인 커널 핵심 코드                   |
+| **src/drivers/**          | 장치 드라이버 코드                            |
+| **src/mm/**               | 메모리 관리 (Physical / Virtual Memory)    |
+| **src/include/**          | 커널 공용 헤더 파일                           |
+
+---
+
+# 빌드 시스템
+
+| 파일                    | 역할                   |
+| --------------------- | -------------------- |
+| **Makefile**          | 커널 빌드 자동화            |
+| **linker.ld**         | 커널 메모리 레이아웃 정의       |
+| **compile_flags.txt** | clangd / LSP용 컴파일 옵션 |
+
+빌드 결과물은 다음 위치에 생성됩니다.
+
+```
+build/kernel.elf
+build/myos.iso
+```
+
+---
+
+# 부팅 과정 (Boot Flow)
+
+커널 부팅 과정은 다음과 같습니다.
+
+```
+GRUB
+  ↓
+Multiboot2 Loader
+  ↓
+boot.s (32-bit)
+  ↓
+Long Mode 진입
+  ↓
+kmain() 실행
+```
+
+---
+
+# 실행 방법
+
+## 빌드
+
+```
+make
+```
+
+## ISO 생성
+
+```
+make iso
+```
+
+## QEMU 실행
+
+```
+make run
+```
+
+---
+
+# 개발 환경
+
+권장 환경
+
+```
+Ubuntu 22.04
+x86_64-elf-gcc
+QEMU
+GRUB
+clangd
+```
+
+---
+
+# 현재 구현 상태
+
+* [x] Multiboot2 부팅
+* [x] Long Mode 전환
+* [x] GDT 초기화
+* [ ] IDT 구현
+* [ ] 인터럽트 처리
+* [ ] 메모리 관리
+* [ ] 드라이버

@@ -1,4 +1,6 @@
-#include "gdt.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <gdt.h>
 
 extern void gdtr_load(uint64_t gdtr_address);
 extern void tss_load(uint16_t tss_address);
@@ -7,7 +9,7 @@ struct GDT_ENTRY	gdt_entry[7];
 struct TSS_ENTRY	tss_entry;
 struct GDTR		gdtr;
 
-void gdtr_init(void) {
+void gdt_init(void) {
 	// Define 10 Bytes GDTR Structure
 	gdtr.limit = (sizeof(struct GDT_ENTRY) * 7) - 1;	// 39 Bytes
 	gdtr.base = (uint64_t)&gdt_entry;
@@ -20,13 +22,13 @@ void gdtr_init(void) {
 	// GDT[0]
 	gdt_set_entry(0, 0, 0, 0, 0);
 	// GDT[1]
-	gdt_set_entry(1, 0, 0xFFFFFFFF, 0xA0, 0x9A);
+	gdt_set_entry(1, 0, 0xFFFFFFFF, 0x9A, 0xA0);
 	// GDT[2]
-	gdt_set_entry(2, 0, 0xFFFFFFFF, 0xC0, 0x92);
+	gdt_set_entry(2, 0, 0xFFFFFFFF, 0x92, 0xC0);
 	// GDT[3]
-	gdt_set_entry(3, 0, 0xFFFFFFFF, 0xC0, 0xF2);
+	gdt_set_entry(3, 0, 0xFFFFFFFF, 0xF2, 0xC0);
 	// GDT[4]
-	gdt_set_entry(4, 0, 0xFFFFFFFF, 0xA0, 0xFA);
+	gdt_set_entry(4, 0, 0xFFFFFFFF, 0xFA, 0xA0);
 	// GDT[5] == TSS[0]
 	// GDT[6] == TSS[1]
 	gdt_tss_descriptor_set_entry(5, (uint64_t)&tss_entry, sizeof(struct TSS_ENTRY) - 1, 0x89, 0x00);
