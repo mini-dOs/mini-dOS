@@ -4,8 +4,6 @@
 #include <serial.h>
 #include <pic.h>
 
-typedef void (*interrupt_handler_t)(interrupt_frame_t *);
-
 static interrupt_handler_t interrupt_handlers[IDT_SIZE];
 
 void interrupt_register(uint8_t vector, interrupt_handler_t handler) {
