@@ -1,7 +1,6 @@
 #include <idt.h>
 #include <stdint.h>
 
-
 __attribute__((aligned(16))) idt_entry_t idt[IDT_SIZE];
 idtr_t idtr;
 

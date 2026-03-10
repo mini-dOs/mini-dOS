@@ -2,9 +2,9 @@
 #include <serial.h>
 #include <pit.h>
 
-
 static void timer_handler(interrupt_frame_t *f)
 {
+    (void)f;
     serial_write(".");
 }
 

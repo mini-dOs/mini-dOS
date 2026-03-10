@@ -1,3 +1,4 @@
+#include <cpu.h>
 #include <stdint.h>
 #include <gdt.h>
 #include <idt.h>
@@ -11,6 +12,7 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     gdt_init();
     serial_init();
     interrupt_subsystem_init();
+    sti();
     
     serial_write("Hello from x86_64 kernel!\r\n");
 
@@ -18,9 +20,9 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
         serial_write("Multiboot2 magic OK.\r\n");
     }
 
-    __asm__ volatile("sti");
+
     serial_write("Interrupts enabled\r\n");
 
     while (1)
-        __asm__ volatile("hlt");
+        hlt();
 }
