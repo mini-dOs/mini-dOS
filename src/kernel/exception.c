@@ -14,6 +14,7 @@ static void divide_error(interrupt_frame_t *f) {
 
 static void breakpoint(interrupt_frame_t *f)
 {
+    (void)f;
     serial_write("#BP breakpoint\n");
 }
 
