@@ -8,8 +8,7 @@
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     (void)multiboot_info; /* use later for memory map, cmdline, etc. */
-
-    gdt_init();
+    init_arch_tables();
     serial_init();
     interrupt_subsystem_init();
     sti();

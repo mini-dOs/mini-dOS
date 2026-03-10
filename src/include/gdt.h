@@ -38,10 +38,12 @@ struct GDTR {
 	uint64_t	base;
 } __attribute__((packed));
 
-void gdt_init(void);
-void gdt_set_entry(int idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t attributes);
-void tss_set_entry(struct TSS_ENTRY* tss_entry_ptr);
-void gdt_tss_descriptor_set_entry(int idx, uint64_t base, uint32_t limit, uint8_t access, uint8_t attributes);
+void init_arch_tables(void);
+void setup_gdt(void);
+void setup_tss(void);
+void load_cpu_registers(void);
+void gdt_set_entry(int idx, uint32_t base, uint32_t limit, uint8_t flags, uint8_t access);
+void tss_set_entry(int idx, uint64_t base, uint32_t limit, uint8_t flags, uint8_t access);
 extern void gdtr_load(uint64_t gdtr_address);
 extern void tss_load(uint16_t tss_address);
 
