@@ -1,3 +1,4 @@
+#include "pic.h"
 #include <stdint.h>
 #include <gdt.h>
 #include <idt.h>
@@ -16,11 +17,20 @@ static void trigger_divide_by_zero(void) {
     );
 }
 
+static void bp_handler(interrupt_frame_t *f) {
+    serial_write("[#BP] vector=");
+    serial_write_hex64(f->vector);
+    serial_write(" rip=");
+    serial_write_hex64(f->rip);
+    serial_write("\r\n");
+}
+
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     (void)multiboot_info; /* use later for memory map, cmdline, etc. */
 
     gdt_init();
+    pic_remap();
     idt_init();
     serial_init();
     
@@ -30,9 +40,10 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
         serial_write("Multiboot2 magic OK.\r\n");
     }
 
-    register_interrupt_handler(0, divide_by_zero_handler);
+    interrupt_register(3, bp_handler);
 
-    trigger_divide_by_zero();
+    __asm__ volatile("int3");
+    serial_write("int3 return OK\r\n");
 
     while (1)
         __asm__ volatile("hlt");
