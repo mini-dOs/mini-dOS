@@ -69,6 +69,9 @@ gdt64_desc:
 _start:
   cli
   cld
+  /* Preserve Multiboot registers before clobbering general-purpose regs. */
+  mov %eax, %esi
+  mov %ebx, %edi
   /* ES = DS (GRUB may leave ES undefined) */
   push %ds
   pop  %es
@@ -79,9 +82,9 @@ _start:
   xor  %eax, %eax
   rep  stosb
   mov  $stack_top, %esp
-  /* Save Multiboot magic (EAX) and info pointer (EBX) for kernel_main */
-  push %ebx
-  push %eax
+  /* Save preserved Multiboot magic/info for 64-bit entry. */
+  push %edi
+  push %esi
 
   lgdt gdt64_desc
 
@@ -126,15 +129,12 @@ start64:
   mov %ax, %fs
   mov %ax, %gs
 
+  /* 32-bit entry pushed EAX/EBX as 4-byte values: [rsp]=magic, [rsp+4]=info. */
+  mov (%rsp), %edi
+  mov 4(%rsp), %esi
+  add $8, %rsp
   mov $stack_top, %rsp
   and $-16, %rsp
-  /* Stack has magic (low 4B) then info (high 4B) in one 8B slot; pop and split */
-  pop %rax        # magic
-  pop %rbx        # info
-
-  mov %eax, %edi
-  mov %ebx, %esi
-  /* RDI = (info<<32)|magic => %edi = magic, %rsi = info */
 
   call kmain
 
