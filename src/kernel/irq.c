@@ -1,6 +1,7 @@
 #include <interrupt.h>
 #include <serial.h>
 #include <pit.h>
+#include <keyboard.h>
 
 static void timer_handler(interrupt_frame_t *f)
 {
@@ -11,5 +12,7 @@ static void timer_handler(interrupt_frame_t *f)
 void irq_init(void)
 {
     pit_init(100);
+
     interrupt_register(32, timer_handler);
+    interrupt_register(33, keyboard_handler);
 }

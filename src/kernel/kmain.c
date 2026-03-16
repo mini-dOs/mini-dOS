@@ -11,6 +11,8 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     init_arch_tables();
     serial_init();
     interrupt_subsystem_init();
+
+    // Turn on the Interrupt Switch of CPU
     sti();
     
     serial_write("Hello from x86_64 kernel!\r\n");
@@ -18,7 +20,6 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     if (multiboot_magic == 0x36d76289) {
         serial_write("Multiboot2 magic OK.\r\n");
     }
-
 
     serial_write("Interrupts enabled\r\n");
 
