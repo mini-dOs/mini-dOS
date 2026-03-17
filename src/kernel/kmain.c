@@ -12,9 +12,6 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     serial_init();
     interrupt_subsystem_init();
 
-    // Turn on the Interrupt Switch of CPU
-    sti();
-    
     serial_write("Hello from x86_64 kernel!\r\n");
 
     if (multiboot_magic == 0x36d76289) {
@@ -23,6 +20,10 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
 
     serial_write("Interrupts enabled\r\n");
 
-    while (1)
-        hlt();
+    // Turn on the Interrupt Switch of CPU
+    sti();
+    
+    while (1) {
+	    hlt();
+    }
 }

@@ -15,15 +15,15 @@ void interrupt_dispatch(interrupt_frame_t *frame) {
 
     interrupt_handler_t handler = interrupt_handlers[vector];
 
+    if (vector >= 32 && vector < 48) {
+        pic_send_eoi(vector - 32);
+    }
+
     if (handler) {
         handler(frame);
     } else {
         serial_write("Unhandled interrupt: ");
         serial_write_hex64(frame->vector);
         serial_write("\n");
-    }
-
-    if (vector >= 32 && vector < 48) {
-        pic_send_eoi(vector - 32);
     }
 }
