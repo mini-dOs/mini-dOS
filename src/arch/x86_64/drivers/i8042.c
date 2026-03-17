@@ -42,20 +42,28 @@ uint8_t i8042_read_data() {
 	return inb(I8042_DATA_PORT);
 }
 
+void i8042_flush_buffer() {
+	while (inb(0x64) & 0x01) {
+		inb(0x60);
+	}
+}
+
 void i8042_init() {
-	// Debug Message
-	serial_write("i8042: Testing controller\r\n");
+	serial_write("Step 1: Flush\r\n");
+	i8042_flush_buffer();
 
 	// Test: i8042
+	serial_write("Step 2: Send Command 0xAA\r\n");
 	i8042_send_command(0xAA);
 
 	uint8_t res = i8042_read_data();
 	
+	serial_write("Step 3: Waiting for 0x55\r\n");
 	if (res == 0x55) {
-		serial_write("i8042: Controller OK!\r\n");
+		serial_write("Step 4: Controller OK\r\n");
 	}
 	else if (res == 0xFC) {
-		serial_write("i8042: Controller Error!\r\n");
+		serial_write("Step 4: Controller Error\r\n");
 	}
 
 	// Activate Keyboard Interface

@@ -74,7 +74,7 @@ void keyboard_handler(interrupt_frame_t *f) {
 	// interrupt.h에서 선언한 인터럽트 핸들러 규격 때문에 무조건 넣어야 함
 	(void)f;	// 대신 아무것도 안 하도록 결과값이 없는 void형으로 형 변환
 
-	uint8_t scancode = i8042_read_data();
+	uint8_t scancode = inb(0x60);
 
 	if (scancode & 0x80) {
 		return;
