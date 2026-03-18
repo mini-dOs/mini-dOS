@@ -4,7 +4,7 @@
 #include <irq.h>
 #include <i8042.h>
 
-void interrupt_subsystem_init(void)
+void init_interrupt_subsystem(void)
 {
     pic_remap();
     // Mask all IRQs
