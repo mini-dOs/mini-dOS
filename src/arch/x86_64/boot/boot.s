@@ -5,7 +5,7 @@
 .set MB2_HDR_LEN,   (mb2_end - mb2_start)
 .set MB2_CHECKSUM,  -(MB2_MAGIC + MB2_ARCH + MB2_HDR_LEN)
 
-.section .multiboot2, "a"
+.section .multiboot2, "a", @progbits
 .align 8
 mb2_start:
   .long MB2_MAGIC

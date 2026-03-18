@@ -31,5 +31,6 @@ void *early_alloc(size_t size, size_t align) {
     }
 
     early_current = (uint8_t *)next;
+    
     return (void *)curr;
 }
