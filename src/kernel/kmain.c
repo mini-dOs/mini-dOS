@@ -20,12 +20,12 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     }
     serial_write("Multiboot2 magic OK\r\n");
 
-    early_alloc_init();
+    init_early_alloc();
     multiboot_parse((void *)(uint64_t)multiboot_info);
 
     serial_write("Memory parsing done\r\n");
 
-    interrupt_subsystem_init();
+    init_interrupt_subsystem();
 
     // Turn on the Interrupt Switch of CPU
     sti();

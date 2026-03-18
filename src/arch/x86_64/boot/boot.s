@@ -5,7 +5,7 @@
 .set MB2_HDR_LEN,   (mb2_end - mb2_start)
 .set MB2_CHECKSUM,  -(MB2_MAGIC + MB2_ARCH + MB2_HDR_LEN)
 
-.section .multiboot2
+.section .multiboot2, "a"
 .align 8
 mb2_start:
   .long MB2_MAGIC
@@ -70,8 +70,8 @@ _start:
   cli
   cld
   /* Preserve Multiboot registers before clobbering general-purpose regs. */
-  mov %eax, %esi
-  mov %ebx, %edi
+  mov %eax, %esi   /* magic -> esi */
+  mov %ebx, %edx   /* info  -> edx (edx is not clobbered by BSS init) */
   /* ES = DS (GRUB may leave ES undefined) */
   push %ds
   pop  %es
@@ -83,8 +83,8 @@ _start:
   rep  stosb
   mov  $stack_top, %esp
   /* Save preserved Multiboot magic/info for 64-bit entry. */
-  push %edi
-  push %esi
+  push %edx   /* info  -> [rsp+4] after next push */
+  push %esi   /* magic -> [rsp]                   */
 
   lgdt gdt64_desc
 

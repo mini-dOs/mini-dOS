@@ -210,7 +210,7 @@ void multiboot_parse(void *mb_info) {
 
     tag = (struct multiboot_tag *)((uint8_t *)mb_info + 8);
 
-    while (tag->type == MULTIBOOT_TAG_TYPE_MMAP) {
+    while (tag->type != MULTIBOOT_TAG_TYPE_END) {
         if (tag->type == MULTIBOOT_TAG_TYPE_MMAP) {
             parse_mmap((struct multiboot_tag_mmap *)tag);
         }
@@ -222,5 +222,6 @@ void multiboot_parse(void *mb_info) {
     align_regions();
     normalize_regions();
 
+    // Debug output ########################################################
     dump_usable_regions("normalized usable regions");
 }

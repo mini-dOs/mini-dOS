@@ -11,7 +11,7 @@ static uintptr_t align_up(uintptr_t addr, size_t align) {
     return (addr + align - 1) & ~(align - 1);
 }
 
-void early_alloc_init(void) {
+void init_early_alloc(void) {
     early_current = _end;
     early_end = early_current + EARLY_ALLOC_SIZE; // Reserve 1MB for early allocations
 }
