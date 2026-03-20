@@ -21,7 +21,6 @@
 *~
 .DS_Store
 compile_flags.txt
-.cache/
 
 # 로그 / 코어 덤프
 *.log

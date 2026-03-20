@@ -4,8 +4,6 @@ SECTIONS
 {
   . = 1M;
 
-  _kernel_start = .;
-
   .multiboot2 : ALIGN(8) { *(.multiboot2) }
 
   .text : ALIGN(16) { *(.text*) }
@@ -17,5 +15,5 @@ SECTIONS
     __bss_end = .;
   }
 
-  _kernel_end = ALIGN(4096);
+  _end = ALIGN(4096);
 }
