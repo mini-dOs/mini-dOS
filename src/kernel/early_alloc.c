@@ -1,7 +1,7 @@
 #include <early_alloc.h>
 #include <cpu.h>
 
-extern uint8_t _end[];            // End of kernel image (from linker)
+extern uint8_t _kernel_end[];            // End of kernel image (from linker)
 
 static uint8_t *early_current;  // Next allocation position
 static uint8_t *early_end;      // Allocation limit
@@ -12,7 +12,7 @@ static uintptr_t align_up(uintptr_t addr, size_t align) {
 }
 
 void init_early_alloc(void) {
-    early_current = _end;
+    early_current = _kernel_end;
     early_end = early_current + EARLY_ALLOC_SIZE; // Reserve 1MB for early allocations
 }
 

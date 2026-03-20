@@ -6,6 +6,7 @@
 #include <interrupt_init.h>
 #include <serial.h>
 #include <multiboot.h>
+#include <mm/paging.h>
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
@@ -24,6 +25,10 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     multiboot_parse((void *)(uint64_t)multiboot_info);
 
     serial_write("Memory parsing done\r\n");
+
+    paging_init();
+
+    serial_write("Paging initialized\r\n");
 
     init_interrupt_subsystem();
 
