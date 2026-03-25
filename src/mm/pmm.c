@@ -64,7 +64,16 @@ void *pmm_alloc(uint32_t order) {
 }
 
 void pmm_free(void *addr, uint32_t order) {
+	uint32_t local_order = order;	
+
+	block_t* left_blk = (block_t*)addr;	// 지금은 왼쪽 블록이 아닐수도 있음
+	block_t* right_blk = (block_t*)buddy_of((uint64_t)left_blk, local_order);	// 지금은 오른쪽 블록이 아닐수도 있음
 	
+	while (local_order < MAX_ORDER && list_remove(local_order, right_blk)) {
+		local_order++;
+		left_blk ^= PAGE_SIZE << (local_order);
+		right_blk = (block_t*)buddy_of((uint64_t)left_blk, local_order);
+	}
 }
 
 void pmm_init(uint64_t mmap_addr, uint32_t mmap_len) {
