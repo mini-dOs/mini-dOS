@@ -70,8 +70,8 @@ void pmm_free(void* addr, uint32_t order) {
 	block_t* buddy = (block_t*)buddy_of((uint64_t)pivot, local_order);
 	
 	while (local_order < MAX_ORDER && list_remove(local_order, buddy)) {
-		pivot = (block_t*)((uint64_t)pivot ^ PAGE_SIZE << (local_order + 1));
-		buddy = (block_t*)buddy_of((uint64_t)pivot, local_order);
+		pivot = (block_t*)((uint64_t)pivot & ~((uint64_t)PAGE_SIZE << local_order));
+		buddy = (block_t*)buddy_of((uint64_t)pivot, local_order + 1);
 		local_order++;
 	}
 
