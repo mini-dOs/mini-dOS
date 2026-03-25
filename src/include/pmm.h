@@ -18,8 +18,8 @@ typedef struct buddy_pmm {
 	uint64_t free_pages;			// 남은 페이지 수
 } buddy_pmm_t;
 
-void pmm_init(uint64_t mmap_addr, uint32_t mmap_len);
 void *pmm_alloc(uint32_t order);
 void pmm_free(void *addr, uint32_t order);
+void pmm_init(uint64_t mmap_addr, uint32_t mmap_len);
 
 #endif
