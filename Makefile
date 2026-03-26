@@ -93,7 +93,7 @@ iso: $(BUILD)/myos.iso
 
 run: $(BUILD)/myos.iso
 	qemu-system-x86_64 \
-	  -m 256M \
+	  -m 8G \
 	  -cdrom $(BUILD)/myos.iso \
 	  -bios /usr/share/OVMF/OVMF_CODE.fd \
 	  -serial stdio \
