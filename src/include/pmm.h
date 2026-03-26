@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <multiboot.h>
 
 #define PAGE_SIZE	4096	// 4KB
 #define MAX_ORDER	10	// 4KB * 2^10 = 4MB
