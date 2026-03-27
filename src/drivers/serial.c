@@ -58,7 +58,6 @@ void serial_write_dec(uint64_t value)
         serial_write_char('0');
         return;
     }
-    
     while (value > 0)
     {
         buf[i++] = (char)('0' + (value % 10));
