@@ -78,7 +78,7 @@ void serial_write_size(uint64_t size)
     const uint64_t GB = 1024 * MB;
 
     uint64_t unit = 1;
-    const char* suffix = " B";
+    const char *suffix = " B";
 
     if (size >= GB)
     {
