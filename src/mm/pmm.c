@@ -1,4 +1,5 @@
 #include <pmm.h>
+#include <multiboot.h>
 
 extern uint64_t _kernel_end;
 
@@ -79,16 +80,19 @@ void pmm_free(void* addr, uint32_t order) {
 	pmm.free_pages += (1 << order);
 }
 
-void pmm_init(uint64_t mmap_addr, uint32_t mmap_len) {
-	for (uint32_t i = 0; i < MAX_ORDER + 1; i++) {
-		pmm.free_list[i] = NULL;
-	}
+void pmm_init() {
+	uint64_t page_num = 0;
 
-
-
-	for (uint32_t i = 0; i < mmap_len; i++) {
+	for (uint16_t i = 0; i < usable_region_count; i++) {
+		page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
 		
-	}
+		uint64_t pivot_addr = usable_regions[i].start;
 
-	total_pages = 
+		for (uint32_t j = 0; j < page_num; j++) {
+			pmm.total_pages++;
+			pmm_free((void*)pivot_addr, 0);
+
+			pivot_addr += PAGE_SIZE;
+		}
+	}
 }

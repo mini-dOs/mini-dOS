@@ -21,6 +21,6 @@ typedef struct buddy_pmm {
 
 void *pmm_alloc(uint32_t order);
 void pmm_free(void *addr, uint32_t order);
-void pmm_init(uint64_t mmap_addr, uint32_t mmap_len);
+void pmm_init();
 
 #endif

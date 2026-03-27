@@ -6,6 +6,7 @@
 #include <interrupt_init.h>
 #include <serial.h>
 #include <multiboot.h>
+#include <pmm.h>
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
@@ -22,6 +23,7 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
 
     init_early_alloc();
     multiboot_parse((void *)(uint64_t)multiboot_info);
+    pmm_init();
 
     serial_write("Memory parsing done\r\n");
 
