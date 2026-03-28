@@ -1,5 +1,6 @@
 #include <early_alloc.h>
 #include <stdint.h>
+#include <mm/pmm_tmp.h>
 
 // 임시 PMM: early allocator 기반
 void* pmm_alloc_page(void) {
