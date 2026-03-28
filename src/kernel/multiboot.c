@@ -3,7 +3,7 @@
 #include <serial.h>
 #include <multiboot.h>
 
-extern uint8_t _kernel_end;
+extern uint8_t _kernel_end[];
 
 memory_region_t *usable_regions;
 uint32_t usable_region_count;
