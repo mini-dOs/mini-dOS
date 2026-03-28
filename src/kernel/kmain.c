@@ -37,14 +37,14 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     // Turn on the Interrupt Switch of CPU
     sti();
 
-    serial_write("Interrupts enabled\r\n\n");
+    serial_write("Interrupts enabled\r\n");
 
     static volatile uint64_t mapped_probe = 0x1122334455667788ULL;
     serial_write("[Test] mapped access start\r\n");
     mapped_probe ^= 0x55AA55AA55AA55AAULL;
     serial_write("[Test] mapped value = ");
     serial_write_hex64(mapped_probe);
-    serial_write("\r\n\n");
+    serial_write("\r\n");
 
     serial_write("[Test] trigger page fault\r\n");
     volatile uint64_t *bad = (volatile uint64_t *)0x40000000ULL; // 1GiB
