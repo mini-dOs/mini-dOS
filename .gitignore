@@ -29,3 +29,6 @@ core
 # 기타
 tags
 
+# oh-my-claudecode
+.omc/
+
