@@ -18,45 +18,34 @@ static uint64_t align_down(uint64_t addr) {
 }
 
 // ###################################################################################################
-// Debug output (simple decimal printer for early stage)
-static void serial_write_u32(uint32_t value) {
-    char buf[11];
-    uint32_t i = 0;
-
-    if (value == 0) {
-        serial_write_char('0');
-        return;
-    }
-
-    // Convert integer to string (reverse order)
-    while (value > 0) {
-        buf[i++] = (char)('0' + (value % 10));
-        value /= 10;
-    }
-
-    // Print in correct order
-    while (i > 0) {
-        serial_write_char(buf[--i]);
-    }
-}
-
 // Dump current usable memory regions (for debugging)
 static void dump_usable_regions(const char *label) {
+    uint64_t total = 0;
+
     serial_write("[MMAP] ");
     serial_write(label);
     serial_write(", count=");
-    serial_write_u32(usable_region_count);
+    serial_write_dec(usable_region_count);
     serial_write("\n");
 
     for (uint32_t i = 0; i < usable_region_count; i++) {
+        uint64_t size = usable_regions[i].end - usable_regions[i].start;
         serial_write("[MMAP] region[");
-        serial_write_u32(i);
+        serial_write_dec(i);
         serial_write("] start=");
         serial_write_hex64(usable_regions[i].start);
         serial_write(" end=");
         serial_write_hex64(usable_regions[i].end);
+        serial_write(" size=");
+        serial_write_size(size);
         serial_write("\n");
+
+        total += size;
     }
+
+    serial_write("[MMAP] total usable = ");
+    serial_write_size(total);
+    serial_write("\n");
 }
 // ###################################################################################################
 
