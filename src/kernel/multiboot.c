@@ -96,7 +96,7 @@ static void parse_mmap(struct multiboot_tag_mmap *mmap_tag) {
 
 // Remove regions overlapping kernel, early allocator, and multiboot info
 static void remove_reserved_regions(void *mb_info) {
-    uint64_t kernel_end = (uint64_t)&_kernel_end;
+    uint64_t kernel_end = (uint64_t)_kernel_end;
     uint64_t early_end  = kernel_end + EARLY_ALLOC_SIZE;
 
     uint64_t mbi_start = (uint64_t)mb_info;
