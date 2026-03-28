@@ -27,8 +27,8 @@ void paging_init(void) {
     uint64_t end   = (uint64_t)_kernel_end;
 
     // page align
-    start &= ~0xFFF;
-    end = (end + 0xFFF) & ~0xFFF;
+    start &= ~(PAGE_SIZE - 1);
+    end = (end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
         map_page(pml4, addr, addr, PAGE_RW);
