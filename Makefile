@@ -2,8 +2,9 @@
 # toolchain
 # ---------------------------------
 
-CC := x86_64-elf-gcc
-AS := x86_64-elf-as
+PREFIX := /opt/cross
+CC := $(PREFIX)/bin/x86_64-elf-gcc
+AS := $(PREFIX)/bin/x86_64-elf-as
 
 SRC := src
 BUILD := build

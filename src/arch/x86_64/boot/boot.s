@@ -22,6 +22,10 @@ mb2_end:
 /* stack can be in .bss (zeroed) */
 .section .bss
 .align 16
+
+.global stack_bottom
+.global stack_top
+
 stack_bottom:
   .skip 16384
 stack_top:
@@ -29,16 +33,20 @@ stack_top:
 /* tables contain non-zero initial values -> keep them in .data */
 .section .data
 .align 4096
+
+.global pml4
 pml4:
   .quad 0
   .skip 4096-8
 
 .align 4096
+.global pdpt
 pdpt:
   .quad 0
   .skip 4096-8
 
 .align 4096
+.global pd
 pd:
   /* 512 entries, each maps 2MiB: addr | present|rw|ps(2MiB) = 0x83 */
   .set i, 0
@@ -48,16 +56,19 @@ pd:
   .endr
 
 /* GDT (minimal) */
-.align 16
+.global gdt64
+.global gdt64_end
+.global gdt64_desc
+
 gdt64:
-  .quad 0x0000000000000000
+  .quad 0
   .quad 0x00AF9A000000FFFF
   .quad 0x00AF92000000FFFF
 gdt64_end:
 
 gdt64_desc:
   .word gdt64_end - gdt64 - 1
-  .long gdt64
+  .long gdt64_phys
 
 .section .note.GNU-stack,"",%progbits
 
@@ -76,27 +87,27 @@ _start:
   push %ds
   pop  %es
   /* Zero BSS so C globals are 0 and we do not rely on loader */
-  mov  $__bss_end, %ecx
-  mov  $__bss_start, %edi
+  mov $__bss_end_phys, %ecx
+  mov $__bss_start_phys, %edi
   sub  %edi, %ecx
   xor  %eax, %eax
   rep  stosb
-  mov  $stack_top, %esp
+  mov  $stack_top_phys, %esp
   /* Save preserved Multiboot magic/info for 64-bit entry. */
   push %edx   /* info  -> [rsp+4] after next push */
   push %esi   /* magic -> [rsp]                   */
 
-  lgdt gdt64_desc
+  lgdt gdt64_desc_phys
 
   /* pml4[0] -> pdpt */
-  movl $pdpt, %eax
+  movl $pdpt_phys, %eax
   orl  $0x003, %eax
-  movl %eax, pml4
+  movl %eax, pml4_phys
 
   /* pdpt[0] -> pd */
-  movl $pd, %eax
+  movl $pd_phys, %eax
   orl  $0x003, %eax
-  movl %eax, pdpt
+  movl %eax, pdpt_phys
 
   /* CR4.PAE=1 */
   mov %cr4, %eax
@@ -104,7 +115,7 @@ _start:
   mov %eax, %cr4
 
   /* CR3 = pml4 */
-  movl $pml4, %eax
+  movl $pml4_phys, %eax
   mov %eax, %cr3
 
   /* EFER.LME=1 */
@@ -118,7 +129,15 @@ _start:
   or  $0x80000000, %eax
   mov %eax, %cr0
 
-  ljmp $0x08, $start64
+  jmp long_mode_entry
+
+.code32
+long_mode_entry:
+  pushl $0x08
+  pushl $start64_phys
+  lret
+
+.global start64
 
 .code64
 start64:
