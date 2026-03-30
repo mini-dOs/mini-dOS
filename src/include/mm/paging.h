@@ -5,6 +5,8 @@
 
 #define PAGE_SIZE 4096
 
+extern uint64_t* pml4_root;
+
 typedef uint64_t pte_t; // Page Table Entry
 typedef uint64_t page_table_t[512]; // Page Table (512 entries)
 

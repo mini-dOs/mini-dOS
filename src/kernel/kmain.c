@@ -1,13 +1,13 @@
-#include <early_alloc.h>
 #include <cpu.h>
-#include <stdint.h>
+#include <early_alloc.h>
 #include <gdt.h>
 #include <idt.h>
 #include <interrupt_init.h>
-#include <serial.h>
-#include <multiboot.h>
 #include <mm/paging.h>
-#include <pmm.h>
+#include <mm/pmm.h>
+#include <multiboot.h>
+#include <serial.h>
+#include <stdint.h>
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {

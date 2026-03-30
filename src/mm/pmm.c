@@ -1,5 +1,6 @@
-#include <pmm.h>
+#include <mm/pmm.h>
 #include <multiboot.h>
+#include <serial.h>
 
 extern uint64_t _kernel_end;
 
@@ -81,7 +82,13 @@ void pmm_free(void* addr, uint32_t order) {
 }
 
 void pmm_init() {
+	serial_write("[pmm_init] start\r\n");
+
 	uint64_t page_num = 0;
+
+	serial_write("usable_region_count: ");
+	serial_write_dec(usable_region_count);
+	serial_write("\r\n\n");
 
 	for (uint16_t i = 0; i < usable_region_count; i++) {
 		page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
@@ -94,5 +101,12 @@ void pmm_init() {
 
 			pivot_addr += PAGE_SIZE;
 		}
+		serial_write("usable_regions[");
+		serial_write_dec(i);
+		serial_write("]: ");
+		serial_write_dec(pmm.total_pages);
+		serial_write("\r\n");
 	}
+
+	serial_write("[pmm_init] done\r\n");
 }

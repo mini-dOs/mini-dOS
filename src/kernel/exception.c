@@ -1,6 +1,10 @@
 #include <cpu.h>
 #include <exception.h>
+#include <interrupt.h>
+#include <mm/paging.h>
+#include <mm/pmm.h>
 #include <serial.h>
+#include <string.h>
 
 static void divide_error(interrupt_frame_t *f) {
     serial_write("[#DE] Divide Error Exception\r\n");
@@ -64,27 +68,37 @@ static void general_protection_fault(interrupt_frame_t *f)
         hlt();
 }
 
-static void page_fault(interrupt_frame_t *f)
-{
-    uint64_t addr;
+static void page_fault(interrupt_frame_t *f) {
+	uint64_t addr;
+	
+	__asm__ volatile("mov %%cr2, %0" : "=r"(addr));
 
-    __asm__ volatile("mov %%cr2, %0" : "=r"(addr));
+	serial_write("[#PF] Page Fault\r\n");
+	serial_write("Fault address: ");
+	serial_write_hex64(addr);
+	serial_write("\r\n");
 
-    serial_write("[#PF] Page Fault\r\n");
-    serial_write("Fault address: ");
-    serial_write_hex64(addr);
-    serial_write("\r\n");
+	serial_write("RIP: ");
+	serial_write_hex64(f->rip);
+	serial_write("\r\n");
 
-    serial_write("RIP: ");
-    serial_write_hex64(f->rip);
-    serial_write("\r\n");
+	serial_write("Error code: ");
+	serial_write_hex64(f->err_code);
+	serial_write("\r\n");
+    
+	if (f->err_code & (1 << 0)) {  // bit 0이 1 -> Present
+		// 현재는 구현 필요성이 낮음
+		// 1. 유저 프로세스의 잘못된 주소 접근
+		// 2. Copy-on-Write 페이지에 쓰기
+		// 3. 커널 자체의 잘못된 접근
+		while (1)
+			hlt();
+	} else {  // bit 0이 0 -> Not Present
+		map_page(pml4_root, addr & ~0xFFF, (uint64_t)pmm_alloc(0), PAGE_RW);
+		serial_write("[#PF] Page Allocated!\r\n");
 
-    serial_write("Error code: ");
-    serial_write_hex64(f->err_code);
-    serial_write("\r\n");
-
-    while (1)
-        hlt();
+		return;
+	}
 }
 
 void exception_init(void)
