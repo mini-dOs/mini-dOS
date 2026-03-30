@@ -5,31 +5,31 @@ KERNEL_LMA = 0x100000;
 
 SECTIONS
 {
-  . = KERNEL_VMA;
+  . = KERNEL_VMA + KERNEL_LMA;
 
   _kernel_start = .;
 
-  .multiboot2 ALIGN(8) : AT(KERNEL_LMA)
+  .multiboot2 ALIGN(8) : AT(ADDR(.multiboot2) - KERNEL_VMA)
   {
     *(.multiboot2)
   }
 
-  .text ALIGN(16) : AT(ADDR(.text) - KERNEL_VMA + KERNEL_LMA)
+  .text ALIGN(16) : AT(ADDR(.text) - KERNEL_VMA)
   {
     *(.text*)
   }
 
-  .rodata ALIGN(16) : AT(ADDR(.rodata) - KERNEL_VMA + KERNEL_LMA)
+  .rodata ALIGN(16) : AT(ADDR(.rodata) - KERNEL_VMA)
   {
     *(.rodata*)
   }
 
-  .data ALIGN(16) : AT(ADDR(.data) - KERNEL_VMA + KERNEL_LMA)
+  .data ALIGN(16) : AT(ADDR(.data) - KERNEL_VMA)
   {
     *(.data*)
   }
 
-  .bss ALIGN(16) : AT(ADDR(.bss) - KERNEL_VMA + KERNEL_LMA)
+  .bss ALIGN(16) : AT(ADDR(.bss) - KERNEL_VMA)
   {
     __bss_start = .;
     *(COMMON) *(.bss*)

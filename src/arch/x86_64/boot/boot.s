@@ -307,7 +307,7 @@ start64:
   mov (%rsp), %edi
   mov 4(%rsp), %esi
   add $8, %rsp
-  mov $stack_top, %rsp
+  mov $stack_top_phys, %rsp
   and $-16, %rsp
 
   movabs $higher_half_entry, %rax

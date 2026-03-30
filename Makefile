@@ -10,7 +10,7 @@ SRC := src
 BUILD := build
 ISODIR := isodir
 
-CFLAGS := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra -I $(SRC)/include
+CFLAGS := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra -g -I $(SRC)/include
 LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none -Wl,-z,noexecstack
 
 # ---------------------------------
