@@ -2,11 +2,10 @@
 #define PMM_H
 
 #include <stdint.h>
-#include <stddef.h>
-#include <multiboot.h>
 
-#define PAGE_SIZE	4096	// 4KB
-#define MAX_ORDER	10	// 4KB * 2^10 = 4MB
+#define	PAGE_SIZE	4096	// 4KB
+#define	MAX_ORDER	10	// 4KB * 2^10 = 4MB
+#define	PMM_STEP_LIMIT	(1UL << 30)
 
 // free block을 연결 리스트로 관리하기 위한 노드
 typedef struct block {
@@ -21,6 +20,7 @@ typedef struct buddy_pmm {
 
 void *pmm_alloc(uint32_t order);
 void pmm_free(void *addr, uint32_t order);
-void pmm_init();
+void pmm_init_step1();
+void pmm_init_step2();
 
 #endif
