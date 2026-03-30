@@ -47,6 +47,9 @@ SECTIONS
   pml4_phys = LOADADDR(.data) + (pml4 - ADDR(.data));
   pdpt_phys = LOADADDR(.data) + (pdpt - ADDR(.data));
   pd_phys   = LOADADDR(.data) + (pd   - ADDR(.data));
+  pd1_phys  = LOADADDR(.data) + (pd1  - ADDR(.data));
+  pd2_phys  = LOADADDR(.data) + (pd2  - ADDR(.data));
+  pd3_phys  = LOADADDR(.data) + (pd3  - ADDR(.data));
 
   gdt64_phys = LOADADDR(.data) + (gdt64 - ADDR(.data));
   gdt64_desc_phys = LOADADDR(.data) + (gdt64_desc - ADDR(.data));
