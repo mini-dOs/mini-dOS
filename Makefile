@@ -1,16 +1,17 @@
 # ---------------------------------
-# toolchain
+# toolchain (fixed)
 # ---------------------------------
 
-CC := x86_64-elf-gcc
-AS := x86_64-elf-as
+PREFIX := /opt/cross
+CC := $(PREFIX)/bin/x86_64-elf-gcc
+AS := $(PREFIX)/bin/x86_64-elf-as
 
 SRC := src
 BUILD := build
+ISODIR := isodir
 
-CFLAGS := -ffreestanding -m64 -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra -I $(SRC)/include
+CFLAGS := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra -g -I $(SRC)/include
 LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none -Wl,-z,noexecstack
-
 
 # ---------------------------------
 # source discovery
@@ -19,7 +20,6 @@ LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none -Wl,-z,noexecsta
 C_SOURCES := $(shell find $(SRC) -name "*.c")
 ASM_SOURCES_S := $(shell find $(SRC) -name "*.S")
 ASM_SOURCES_s := $(shell find $(SRC) -name "*.s")
-
 
 # ---------------------------------
 # object files
@@ -31,15 +31,13 @@ ASM_OBJS += $(patsubst $(SRC)/%.s,$(BUILD)/%.o,$(ASM_SOURCES_s))
 
 OBJS := $(C_OBJS) $(ASM_OBJS)
 
-
 # ---------------------------------
 # targets
 # ---------------------------------
 
-.PHONY: all clean iso run
+.PHONY: all clean iso run run-debug
 
 all: $(BUILD)/kernel.elf
-
 
 # ---------------------------------
 # link kernel
@@ -48,58 +46,74 @@ all: $(BUILD)/kernel.elf
 $(BUILD)/kernel.elf: $(OBJS)
 	$(CC) -T linker.ld -o $@ $(LDFLAGS) $(OBJS) -lgcc
 
-
 # ---------------------------------
-# compile C
+# compile rules
 # ---------------------------------
 
 $(BUILD)/%.o: $(SRC)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-
-# ---------------------------------
-# compile preprocessed asm (.S)
-# ---------------------------------
-
 $(BUILD)/%.o: $(SRC)/%.S
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
-
-
-# ---------------------------------
-# compile raw asm (.s)
-# ---------------------------------
 
 $(BUILD)/%.o: $(SRC)/%.s
 	@mkdir -p $(dir $@)
 	$(AS) $< -o $@
 
-
 # ---------------------------------
-# ISO build
+# ISO build (FINAL, stable)
 # ---------------------------------
 
 $(BUILD)/myos.iso: $(BUILD)/kernel.elf
-	cp $(BUILD)/kernel.elf isodir/boot/kernel.elf
-	grub-mkrescue -o $(BUILD)/myos.iso isodir
+	@echo "[*] Preparing ISO directory"
+	mkdir -p $(ISODIR)/boot/grub
+	rm -f $(ISODIR)/boot/kernel.elf
+
+	cp $(BUILD)/kernel.elf $(ISODIR)/boot/kernel.elf
+	@if [ ! -f $(ISODIR)/boot/grub/grub.cfg ]; then \
+		cp grub.cfg $(ISODIR)/boot/grub/grub.cfg; \
+	fi
+
+	@echo "[*] Building hybrid ISO (BIOS + UEFI)"
+	grub-mkrescue \
+	  -o $(BUILD)/myos.iso \
+	  $(ISODIR)
 
 iso: $(BUILD)/myos.iso
 
-
 # ---------------------------------
-# run
+# run (UEFI - OVMF)
 # ---------------------------------
 
-run: $(BUILD)/myos.iso
+run:
+	$(MAKE) clean
+	$(MAKE) $(BUILD)/myos.iso
 	qemu-system-x86_64 \
-	  -m 8G \
+		-m 2G \
+		-cdrom $(BUILD)/myos.iso \
+		-bios /usr/share/OVMF/OVMF_CODE.fd \
+		-vga std \
+		-serial stdio \
+		-no-reboot \
+		-no-shutdown
+
+run-debug: 
+	$(MAKE) clean
+	$(MAKE) $(BUILD)/myos.iso
+	qemu-system-x86_64 \
+	  -m 2G \
 	  -cdrom $(BUILD)/myos.iso \
 	  -bios /usr/share/OVMF/OVMF_CODE.fd \
+	  -display none \
+	  -vga std \
+	  -monitor none \
 	  -serial stdio \
+	  -no-reboot \
 	  -no-shutdown \
-	  -no-reboot
-
+	  -d int,cpu_reset \
+	  -D $(BUILD)/qemu-debug.log
 
 # ---------------------------------
 # clean
@@ -107,3 +121,4 @@ run: $(BUILD)/myos.iso
 
 clean:
 	rm -rf $(BUILD)
+	rm -f $(ISODIR)/boot/kernel.elf

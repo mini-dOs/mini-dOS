@@ -24,13 +24,15 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
 
     init_early_alloc();
     multiboot_parse((void *)(uint64_t)multiboot_info);
-    pmm_init();
+    pmm_init_step1();
 
     serial_write("Memory parsing done\r\n");
 
     paging_init();
 
     serial_write("Paging initialized\r\n");
+
+    pmm_init_step2();
 
     init_interrupt_subsystem();
 
