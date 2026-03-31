@@ -11,7 +11,7 @@
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
-    init_arch_tables();
+    arch_tables_init();
     serial_init();
 
     serial_write("Kernel start\r\n");
@@ -22,7 +22,7 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     }
     serial_write("Multiboot2 magic OK\r\n");
 
-    init_early_alloc();
+    early_alloc_init();
     multiboot_parse((void *)(uint64_t)multiboot_info);
     pmm_init_step1();
 
