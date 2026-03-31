@@ -10,7 +10,10 @@ SRC := src
 BUILD := build
 ISODIR := isodir
 
-CFLAGS := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector -fno-pie -mno-red-zone -O2 -Wall -Wextra -g -I $(SRC)/include
+CFLAGS_BASE := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector -fno-pie -mno-red-zone -Wall -Wextra -I $(SRC)/include
+CFLAGS_DEBUG := $(CFLAGS_BASE) -O0 -g3 -fno-omit-frame-pointer
+CFLAGS_RELEASE := $(CFLAGS_BASE) -O2 -g
+CFLAGS ?= $(CFLAGS_RELEASE)
 LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none -Wl,-z,noexecstack
 
 # ---------------------------------
@@ -60,7 +63,7 @@ $(BUILD)/%.o: $(SRC)/%.S
 
 $(BUILD)/%.o: $(SRC)/%.s
 	@mkdir -p $(dir $@)
-	$(AS) $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # ---------------------------------
 # ISO build (FINAL, stable)
@@ -89,9 +92,9 @@ iso: $(BUILD)/myos.iso
 
 run:
 	$(MAKE) clean
-	$(MAKE) $(BUILD)/myos.iso
+	$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BUILD)/myos.iso
 	qemu-system-x86_64 \
-		-m 2G \
+		-m 8G \
 		-cdrom $(BUILD)/myos.iso \
 		-bios /usr/share/OVMF/OVMF_CODE.fd \
 		-vga std \
@@ -101,18 +104,18 @@ run:
 
 run-debug: 
 	$(MAKE) clean
-	$(MAKE) $(BUILD)/myos.iso
+	$(MAKE) CFLAGS="$(CFLAGS_DEBUG)" $(BUILD)/myos.iso
 	qemu-system-x86_64 \
-	  -m 2G \
+	  -m 8G \
 	  -cdrom $(BUILD)/myos.iso \
 	  -bios /usr/share/OVMF/OVMF_CODE.fd \
 	  -display none \
-	  -vga std \
 	  -monitor none \
 	  -serial stdio \
 	  -no-reboot \
 	  -no-shutdown \
-	  -d int,cpu_reset \
+	  -s -S \
+	  -d int,guest_errors \
 	  -D $(BUILD)/qemu-debug.log
 
 # ---------------------------------

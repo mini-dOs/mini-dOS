@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <multiboot2.h>
 
+#define KERNEL_BASE 0xFFFFFFFF80000000ULL
+
 typedef struct {
     uint64_t start;
     uint64_t end;
