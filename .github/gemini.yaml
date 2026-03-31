@@ -1,0 +1,4 @@
+# Gemini Code Assist configuration
+# https://developers.google.com/gemini-code-assist/docs/customize-gemini-behavior-github
+
+language: Korean
