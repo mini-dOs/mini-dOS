@@ -1,6 +1,7 @@
-#include <stdint.h>
+#include <early_alloc.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
+#include <stdint.h>
 #include <string.h>
 
 // paging.h의 전역 변수 -> 모든 페이지 테이블의 기반
@@ -28,7 +29,7 @@ void paging_init(void) {
     memset(pml4_root, 0, PAGE_SIZE);
 
     uint64_t start = (uint64_t)_kernel_start;
-    uint64_t end   = (uint64_t)_kernel_end;
+    uint64_t end   = (uint64_t)_kernel_end + EARLY_ALLOC_SIZE;	// early_alloc.h
 
     // page align
     start &= ~(PAGE_SIZE - 1);
