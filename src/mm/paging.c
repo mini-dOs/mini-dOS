@@ -1,6 +1,10 @@
+#include <stdint.h>
 #include <mm/paging.h>
-#include <mm/pmm_tmp.h>
+#include <mm/pmm.h>
 #include <string.h>
+
+// paging.h의 전역 변수 -> 모든 페이지 테이블의 기반
+uint64_t* pml4_root;
 
 // linker symbols → address 자체
 extern uint8_t _kernel_start[];
@@ -20,8 +24,8 @@ static inline void load_cr3(uint64_t pml4_phys) {
 }
 
 void paging_init(void) {
-    uint64_t* pml4 = pmm_alloc_page();
-    memset(pml4, 0, PAGE_SIZE);
+    pml4_root = pmm_alloc(0);
+    memset(pml4_root, 0, PAGE_SIZE);
 
     uint64_t start = (uint64_t)_kernel_start;
     uint64_t end   = (uint64_t)_kernel_end;
@@ -31,11 +35,11 @@ void paging_init(void) {
     end = (end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
-        map_page(pml4, addr, addr, PAGE_RW);
+        map_page(pml4_root, addr, addr, PAGE_RW);
     }
 
     // CR3 switch (must use physical address)
-    load_cr3(virt_to_phys(pml4));
+    load_cr3(virt_to_phys(pml4_root));
 }
 
 void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
@@ -46,7 +50,7 @@ void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
 
     // PML4 -> PDPT
     if (!(pml4[pml4_i] & PAGE_PRESENT)) {
-        uint64_t* pdpt = pmm_alloc_page();
+        uint64_t* pdpt = pmm_alloc(0);
         memset(pdpt, 0, PAGE_SIZE);
 
         // pdpt is currently identity-mapped, so virtual == physical.
@@ -58,7 +62,7 @@ void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
 
     // PDPT -> PD
     if (!(pdpt[pdpt_i] & PAGE_PRESENT)) {
-        uint64_t* pd = pmm_alloc_page();
+        uint64_t* pd = pmm_alloc(0);
         memset(pd, 0, PAGE_SIZE);
 
         pdpt[pdpt_i] = make_entry(virt_to_phys(pd), PAGE_PRESENT | PAGE_RW);
@@ -68,7 +72,7 @@ void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
 
     // PD -> PT
     if (!(pd[pd_i] & PAGE_PRESENT)) {
-        uint64_t* pt = pmm_alloc_page();
+        uint64_t* pt = pmm_alloc(0);
         memset(pt, 0, PAGE_SIZE);
 
         pd[pd_i] = make_entry(virt_to_phys(pt), PAGE_PRESENT | PAGE_RW);
