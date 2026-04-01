@@ -1,7 +1,22 @@
-#include <pmm.h>
-#include <multiboot.h>
+#include <config.h>
+#include <mm/pmm.h>
+#include <multiboot.h>	// usable_region 사용을 위해
+#include <serial.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef PMM_DEBUG
+	#define	PMM_DEBUG_MSG(s)	serial_write(s)
+	#define	PMM_DEBUG_DEC(n)	serial_write_dec(n)
+	#define	PMM_DEBUG_NEWLINE()	serial_write("\r\n")
+#else
+	#define	PMM_DEBUG_MSG(s)	((void)0)
+	#define	PMM_DEBUG_DEC(n)	((void)0)
+	#define	PMM_DEBUG_NEWLINE()	((void)0)
+#endif
 
 extern uint64_t _kernel_end;
+uint32_t last_region;
 
 static buddy_pmm_t pmm;
 
@@ -80,19 +95,107 @@ void pmm_free(void* addr, uint32_t order) {
 	pmm.free_pages += (1 << order);
 }
 
-void pmm_init() {
+void pmm_init_step1() {
+	PMM_DEBUG_NEWLINE();
+	PMM_DEBUG_MSG("[pmm_init_step1] start");
+	PMM_DEBUG_NEWLINE();
+	PMM_DEBUG_MSG("Usable Region Num: ");
+	PMM_DEBUG_DEC(usable_region_count);
+	PMM_DEBUG_NEWLINE();
+
 	uint64_t page_num = 0;
 
-	for (uint16_t i = 0; i < usable_region_count; i++) {
+	for (uint32_t i = 0; i < usable_region_count; i++) {
+		PMM_DEBUG_MSG("Region #");
+		PMM_DEBUG_DEC(i);
+		PMM_DEBUG_NEWLINE();
+
 		page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
 		
 		uint64_t pivot_addr = usable_regions[i].start;
 
 		for (uint32_t j = 0; j < page_num; j++) {
+			if (pivot_addr < PMM_STEP_LIMIT) {
+				pmm_free((void*)pivot_addr, 0);
+				pmm.total_pages++;
+
+				pivot_addr += PAGE_SIZE;
+			} else {
+				last_region = i;
+				i = usable_region_count;
+				break;
+			}
+		}
+
+		PMM_DEBUG_MSG("Sum of Total Page: ");
+		PMM_DEBUG_DEC(pmm.total_pages);
+		PMM_DEBUG_NEWLINE();
+	}
+
+	PMM_DEBUG_MSG("[pmm_init_step1] done");
+	PMM_DEBUG_NEWLINE();
+	PMM_DEBUG_NEWLINE();
+}
+
+void pmm_init_step2() {
+	PMM_DEBUG_NEWLINE();
+	PMM_DEBUG_MSG("[pmm_init_step2] start");
+	PMM_DEBUG_NEWLINE();
+	PMM_DEBUG_MSG("Region #");
+	PMM_DEBUG_DEC(last_region);
+	PMM_DEBUG_NEWLINE();
+
+	serial_write_hex64(usable_regions[last_region].start);
+	PMM_DEBUG_NEWLINE();
+	serial_write_hex64(usable_regions[last_region].end);
+	PMM_DEBUG_NEWLINE();
+	uint64_t page_num = (usable_regions[last_region].end - usable_regions[last_region].start) >> 12;
+	PMM_DEBUG_MSG(">");
+	PMM_DEBUG_NEWLINE();
+	PMM_DEBUG_DEC(page_num);
+	PMM_DEBUG_NEWLINE();
+		
+	uint64_t last_pivot_addr = usable_regions[last_region].start;
+	serial_write_hex64(last_pivot_addr);
+	PMM_DEBUG_NEWLINE();
+
+	for (uint32_t i = 0; i < page_num; i++) {
+		if (last_pivot_addr <= PMM_STEP_LIMIT) {
+			last_pivot_addr += PAGE_SIZE;
+			PMM_DEBUG_MSG(".");
+		} else {
+			pmm_free((void*)last_pivot_addr, 0);
 			pmm.total_pages++;
+
+			last_pivot_addr += PAGE_SIZE;
+		}
+	}
+
+	PMM_DEBUG_MSG("Sum of Total Page: ");
+	PMM_DEBUG_DEC(pmm.total_pages);
+	PMM_DEBUG_NEWLINE();
+
+	for (uint32_t i = last_region + 1; i < usable_region_count; i++) {
+		PMM_DEBUG_MSG("Region #");
+		PMM_DEBUG_DEC(i);
+		PMM_DEBUG_NEWLINE();
+
+		page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
+		
+		uint64_t pivot_addr = usable_regions[i].start;
+
+		for (uint32_t j = 0; j < page_num; j++) {
 			pmm_free((void*)pivot_addr, 0);
+			pmm.total_pages++;
 
 			pivot_addr += PAGE_SIZE;
 		}
+
+		PMM_DEBUG_MSG("Sum of Total Page: ");
+		PMM_DEBUG_DEC(pmm.total_pages);
+		PMM_DEBUG_NEWLINE();
 	}
+
+	PMM_DEBUG_MSG("[pmm_init_step2] done");
+	PMM_DEBUG_NEWLINE();
 }
