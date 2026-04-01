@@ -11,10 +11,11 @@
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
-    init_arch_tables();
     serial_init();
 
     serial_write("Kernel start\r\n");
+    
+    init_arch_tables();
 
     if (multiboot_magic != 0x36d76289) {
         serial_write("Invalid Multiboot magic\r\n");
