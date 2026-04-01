@@ -314,6 +314,8 @@ start64:
   jmp *%rax
 
 higher_half_entry:
+  movabs $stack_top, %rsp
+  and $-16, %rsp
   call kmain
 
 .hang:
