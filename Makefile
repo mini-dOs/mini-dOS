@@ -91,7 +91,6 @@ iso: $(BUILD)/myos.iso
 # ---------------------------------
 
 run:
-	$(MAKE) clean
 	$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BUILD)/myos.iso
 	qemu-system-x86_64 \
 		-m 8G \
@@ -102,21 +101,9 @@ run:
 		-no-reboot \
 		-no-shutdown
 
-run-debug: 
+run-debug:
 	$(MAKE) clean
 	$(MAKE) CFLAGS="$(CFLAGS_DEBUG)" $(BUILD)/myos.iso
-	qemu-system-x86_64 \
-		-m 2G \
-		-cdrom $(BUILD)/myos.iso \
-		-bios /usr/share/OVMF/OVMF_CODE.fd \
-		-vga std \
-		-serial stdio \
-		-no-reboot \
-		-no-shutdown
-
-run-debug: 
-	$(MAKE) clean
-	$(MAKE) $(BUILD)/myos.iso
 	qemu-system-x86_64 \
 	  -m 2G \
 	  -cdrom $(BUILD)/myos.iso \
