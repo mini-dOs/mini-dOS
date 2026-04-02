@@ -12,7 +12,7 @@ static uint8_t debug_stack[4096] __attribute((aligned(16)));	// IST2
 extern void gdtr_load(uint64_t gdtr_address);
 extern void tss_load(uint16_t tss_address);
 
-void init_arch_tables(void) {
+void arch_tables_init(void) {
 	// Define 10 Bytes GDTR Structure
 	gdtr.limit = (sizeof(struct GDT_ENTRY) * 7) - 1;	// 39 Bytes
 	gdtr.base = (uint64_t)&gdt_entry;
