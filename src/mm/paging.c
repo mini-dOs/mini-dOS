@@ -1,3 +1,5 @@
+#include <early_alloc.h>
+#include <kernel_base.h>
 #include <stdint.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
@@ -5,15 +7,6 @@
 
 // paging.h의 전역 변수 -> 모든 페이지 테이블의 기반
 uint64_t* pml4_root;
-
-// linker symbols → address 자체
-extern uint8_t _kernel_start[];
-extern uint8_t _kernel_end[];
-
-// 현재는 identity mapping (VA == PA)
-static inline uint64_t virt_to_phys(void* vaddr) {
-    return (uint64_t)vaddr;
-}
 
 static inline uint64_t make_entry(uint64_t phys, uint64_t flags) {
     return (phys & PAGE_ADDR_MASK) | flags;
@@ -27,15 +20,15 @@ void paging_init(void) {
     pml4_root = pmm_alloc(0);
     memset(pml4_root, 0, PAGE_SIZE);
 
-    uint64_t start = (uint64_t)_kernel_start;
-    uint64_t end   = (uint64_t)_kernel_end;
+    uint64_t start = (uint64_t)kernel_vma();
+    uint64_t end   = (uint64_t)kernel_vma_end() + EARLY_ALLOC_SIZE; // 커널과 early_alloc 영역 모두 매핑
 
     // page align
     start &= ~(PAGE_SIZE - 1);
     end = (end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
-        map_page(pml4_root, addr, addr, PAGE_RW);
+        map_page(pml4_root, addr, virt_to_phys((void*)addr), PAGE_RW);
     }
 
     // CR3 switch (must use physical address)
@@ -58,7 +51,7 @@ void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
         pml4[pml4_i] = make_entry(virt_to_phys(pdpt), PAGE_PRESENT | PAGE_RW);
     }
 
-    uint64_t* pdpt = (uint64_t*)(pml4[pml4_i] & PAGE_ADDR_MASK);
+    uint64_t* pdpt = (uint64_t*)phys_to_virt(pml4[pml4_i] & PAGE_ADDR_MASK);
 
     // PDPT -> PD
     if (!(pdpt[pdpt_i] & PAGE_PRESENT)) {
@@ -68,7 +61,7 @@ void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
         pdpt[pdpt_i] = make_entry(virt_to_phys(pd), PAGE_PRESENT | PAGE_RW);
     }
 
-    uint64_t* pd = (uint64_t*)(pdpt[pdpt_i] & PAGE_ADDR_MASK);
+    uint64_t* pd = (uint64_t*)phys_to_virt(pdpt[pdpt_i] & PAGE_ADDR_MASK);
 
     // PD -> PT
     if (!(pd[pd_i] & PAGE_PRESENT)) {
@@ -78,7 +71,7 @@ void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
         pd[pd_i] = make_entry(virt_to_phys(pt), PAGE_PRESENT | PAGE_RW);
     }
 
-    uint64_t* pt = (uint64_t*)(pd[pd_i] & PAGE_ADDR_MASK);
+    uint64_t* pt = (uint64_t*)phys_to_virt(pd[pd_i] & PAGE_ADDR_MASK);
 
     // PT -> Page
     pt[pt_i] = make_entry(pa, flags | PAGE_PRESENT);
