@@ -1,3 +1,4 @@
+#include <kernel_base.h>
 #include <config.h>
 #include <mm/pmm.h>
 #include <multiboot.h>	// usable_region 사용을 위해
@@ -15,14 +16,14 @@
 	#define	PMM_DEBUG_NEWLINE()	((void)0)
 #endif
 
-extern uint64_t _kernel_end;
 uint32_t last_region;
 
 static buddy_pmm_t pmm;
 
 
 static void list_push(uint32_t order, block_t* blk) {
-	blk->next = pmm.free_list[order];	
+	block_t* vblk = (block_t*)phys_to_virt((uintptr_t)blk);
+	vblk->next = pmm.free_list[order];
 	pmm.free_list[order] = blk;
 }
 
@@ -31,7 +32,8 @@ static block_t *list_pop(uint32_t order) {
 
 	if (blk == NULL) return NULL;
 
-	pmm.free_list[order] = blk->next;
+	block_t* vblk = (block_t*)phys_to_virt((uintptr_t)blk);
+	pmm.free_list[order] = vblk->next;
 	return blk;
 }
 
@@ -39,17 +41,21 @@ static int list_remove(uint32_t order, block_t* target) {
 	block_t* blk = pmm.free_list[order];
 
 	if (blk == NULL) return 0;
+
+	block_t* vblk = (block_t*)phys_to_virt((uintptr_t)blk);
 	if (blk == target) {
-		pmm.free_list[order] = blk->next;
+		pmm.free_list[order] = vblk->next;
 		return 1;
 	}
 
-	while (blk->next != NULL) {
-		if (blk->next == target) {
-			blk->next = blk->next->next;
+	while (vblk->next != NULL) {
+		if (vblk->next == target) {
+			block_t* vtarget = (block_t*)phys_to_virt((uintptr_t)target);
+			vblk->next = vtarget->next;
 			return 1;
 		}
-		else blk = blk->next;
+		blk = vblk->next;
+		vblk = (block_t*)phys_to_virt((uintptr_t)blk);
 	}
 	return 0;
 }
@@ -162,7 +168,7 @@ void pmm_init_step2() {
 	for (uint32_t i = 0; i < page_num; i++) {
 		if (last_pivot_addr <= PMM_STEP_LIMIT) {
 			last_pivot_addr += PAGE_SIZE;
-			PMM_DEBUG_MSG(".");
+			// PMM_DEBUG_MSG(".");
 		} else {
 			pmm_free((void*)last_pivot_addr, 0);
 			pmm.total_pages++;

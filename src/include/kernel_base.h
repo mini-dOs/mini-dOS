@@ -14,6 +14,9 @@ static inline uintptr_t kernel_vma(void)
     return (uintptr_t)KERNEL_VMA;
 }
 
+/**
+ * 커널의 virtual end address (_kernel_end)를 반환함 
+ */
 static inline uintptr_t kernel_vma_end(void)
 {
     return (uintptr_t)_kernel_end;

@@ -1,0 +1,12 @@
+#ifndef KERNEL_INFO_H
+#define KERNEL_INFO_H
+
+#define KERNEL_BASE	0xFFFFFFFF80000000ULL
+
+#define PAGE_SIZE	0x1000
+#define PAGE_2MB	0x200000
+
+#define MAX_ORDER	10	// 4KB * 2^10 = 4MB
+#define PMM_STEP_LIMIT	(1UL << 30)
+
+#endif
