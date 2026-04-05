@@ -50,6 +50,7 @@ SECTIONS
   pd1_phys  = LOADADDR(.data) + (pd1  - ADDR(.data));
   pd2_phys  = LOADADDR(.data) + (pd2  - ADDR(.data));
   pd3_phys  = LOADADDR(.data) + (pd3  - ADDR(.data));
+  pdpt_direct_phys = LOADADDR(.data) + (pdpt_direct - ADDR(.data));
 
   gdt64_phys = LOADADDR(.data) + (gdt64 - ADDR(.data));
   gdt64_desc_phys = LOADADDR(.data) + (gdt64_desc - ADDR(.data));

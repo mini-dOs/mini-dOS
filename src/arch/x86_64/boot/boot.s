@@ -63,6 +63,11 @@ pd2:
 pd3:
   .fill 4096, 1, 0
 
+.align 4096
+.global pdpt_direct
+pdpt_direct:
+  .fill 4096, 1, 0
+
 /* GDT (minimal) */
 .global gdt64
 .global gdt64_end
@@ -159,6 +164,12 @@ _start:
   xor %eax, %eax
   rep stosl
 
+  /* PDPT_DIRECT */
+  mov $pdpt_direct_phys, %edi
+  mov $1024, %ecx
+  xor %eax, %eax
+  rep stosl
+
   /* ---------------------------
    * Build paging structures
    * --------------------------- */
@@ -203,6 +214,36 @@ _start:
   or  $0x003, %eax
   mov %eax, (pdpt_phys + 4080)
   movl $0, (pdpt_phys + 4084)
+
+  /* PML4[273] → PDPT_DIRECT (direct map for 0xFFFF888000000000) */
+  mov $pdpt_direct_phys, %eax
+  or  $0x003, %eax
+  mov %eax, (pml4_phys + 2184)       /* 273 * 8 = 2184 */
+  movl $0, (pml4_phys + 2188)
+
+  /* PDPT_DIRECT[0] → PD  (0~1GB) */
+  mov $pd_phys, %eax
+  or  $0x003, %eax
+  mov %eax, (pdpt_direct_phys)
+  movl $0, (pdpt_direct_phys + 4)
+
+  /* PDPT_DIRECT[1] → PD1 (1~2GB) */
+  mov $pd1_phys, %eax
+  or  $0x003, %eax
+  mov %eax, (pdpt_direct_phys + 8)
+  movl $0, (pdpt_direct_phys + 12)
+
+  /* PDPT_DIRECT[2] → PD2 (2~3GB) */
+  mov $pd2_phys, %eax
+  or  $0x003, %eax
+  mov %eax, (pdpt_direct_phys + 16)
+  movl $0, (pdpt_direct_phys + 20)
+
+  /* PDPT_DIRECT[3] → PD3 (3~4GB) */
+  mov $pd3_phys, %eax
+  or  $0x003, %eax
+  mov %eax, (pdpt_direct_phys + 24)
+  movl $0, (pdpt_direct_phys + 28)
   
   /* ---------------------------
    * Fill PDs with 2MB pages

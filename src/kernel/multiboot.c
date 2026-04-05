@@ -1,9 +1,11 @@
+#include "kernel_base.h"
 #include <early_alloc.h>
 #include <multiboot2.h>
 #include <serial.h>
 #include <multiboot.h>
+#include <stdint.h>
 
-extern uint8_t _kernel_end[];
+extern char _kernel_end[];
 
 memory_region_t *usable_regions;
 uint32_t usable_region_count;
@@ -96,7 +98,7 @@ static void parse_mmap(struct multiboot_tag_mmap *mmap_tag) {
 
 // Remove regions overlapping kernel, early allocator, and multiboot info
 static void remove_reserved_regions(void *mb_info) {
-    uint64_t kernel_end = (uint64_t)_kernel_end - KERNEL_BASE;
+    uint64_t kernel_end = (uint64_t)_kernel_end - (uint64_t)kernel_vma();
     uint64_t early_end  = kernel_end + EARLY_ALLOC_SIZE;
 
     uint64_t mbi_start = (uint64_t)mb_info;

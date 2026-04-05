@@ -2,6 +2,7 @@
 #define KERNEL_BASE_H
 
 #include <stdint.h>
+#include <kernel_info.h>
 
 extern char KERNEL_VMA[];
 extern char _kernel_end[];
@@ -23,11 +24,19 @@ static inline uintptr_t kernel_vma_end(void)
 }
 
 /**
+ * 커널 이미지의 virtual address를 physical address로 변환함 (KERNEL_VMA 기준)
+ */
+static inline uintptr_t kernel_virt_to_phys(void* addr)
+{
+    return (uintptr_t)addr - kernel_vma();
+}
+
+/**
  * 커널의 virtual address를 physical address로 변환함
  */
 static inline uintptr_t virt_to_phys(void* addr)
 {
-    return (uintptr_t)addr - kernel_vma();
+    return (uintptr_t)addr - PAGE_OFFSET_BASE;
 }
 
 /**
@@ -35,7 +44,7 @@ static inline uintptr_t virt_to_phys(void* addr)
  */
 static inline void* phys_to_virt(uintptr_t addr)
 {
-    return (void*)(addr + kernel_vma());
+    return (void*)(addr + PAGE_OFFSET_BASE);
 }
 
 #endif

@@ -32,7 +32,7 @@ void paging_init(void)
     end = (end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
-        map_page(pml4_root, addr, virt_to_phys((void*)addr), PAGE_RW);
+        map_page(pml4_root, addr, kernel_virt_to_phys((void*)addr), PAGE_RW);
     }
 
     for (uint32_t i = 0; i < usable_region_count; i++) {
@@ -117,6 +117,10 @@ void map_page_2mb(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags)
     }
 
     uint64_t* pd = (uint64_t*)phys_to_virt(pdpt[pdpt_i] & PAGE_ADDR_MASK);
+
+    // 이미 매핑된 엔트리가 있으면 건너뜀
+    if (pd[pd_i] & PAGE_PRESENT)
+        return;
 
     pd[pd_i] = make_entry(pa, flags | PAGE_PRESENT);
 }
