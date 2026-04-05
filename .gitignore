@@ -23,6 +23,7 @@
 compile_flags.txt
 compile_commands.json
 .cache/
+CLAUDE.md
 
 # 로그 / 코어 덤프
 *.log

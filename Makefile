@@ -105,7 +105,7 @@ run-debug:
 	$(MAKE) clean
 	$(MAKE) CFLAGS="$(CFLAGS_DEBUG)" $(BUILD)/myos.iso
 	qemu-system-x86_64 \
-	  -m 2G \
+	  -m 8G \
 	  -cdrom $(BUILD)/myos.iso \
 	  -bios /usr/share/OVMF/OVMF_CODE.fd \
 	  -display none \

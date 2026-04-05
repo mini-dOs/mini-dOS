@@ -2,8 +2,7 @@
 #define PAGING_H
 
 #include <stdint.h>
-
-#define PAGE_SIZE 4096
+#include <kernel_info.h>
 
 extern uint64_t* pml4_root;
 
@@ -13,6 +12,7 @@ typedef uint64_t page_table_t[512]; // Page Table (512 entries)
 #define PAGE_PRESENT    (1ULL << 0)
 #define PAGE_RW         (1ULL << 1)
 #define PAGE_USER       (1ULL << 2)
+#define PAGE_PS         (1ULL << 7)
 #define PAGE_GLOBAL     (1ULL << 8)
 #define PAGE_NX         (1ULL << 63)
 
@@ -20,5 +20,6 @@ typedef uint64_t page_table_t[512]; // Page Table (512 entries)
 
 void paging_init(void);
 void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
+void map_page_2mb(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
 
 #endif // PAGING_H

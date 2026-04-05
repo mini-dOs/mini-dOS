@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 #include <multiboot2.h>
-
-#define KERNEL_BASE 0xFFFFFFFF80000000ULL
+#include <kernel_info.h>
 
 typedef struct {
     uint64_t start;

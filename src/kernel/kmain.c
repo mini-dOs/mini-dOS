@@ -49,10 +49,10 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     serial_write_hex64(mapped_probe);
     serial_write("\r\n");
 
-    serial_write("[Test] trigger page fault\r\n");
-    volatile uint64_t *bad = (volatile uint64_t *)0x40000000ULL; // 1GiB
-    *bad = 0xDEADBEEFCAFEBABEULL; // 의도적 #PF (err_code=0x2)
-    serial_write("[TEST] unreachable\r\n");
+    // serial_write("[Test] trigger page fault\r\n");
+    // volatile uint64_t *bad = (volatile uint64_t *)0x40000000ULL; // 1GiB
+    // *bad = 0xDEADBEEFCAFEBABEULL; // 의도적 #PF (err_code=0x2)
+    // serial_write("[TEST] unreachable\r\n");
 
     while (1)
         hlt();
