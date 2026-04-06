@@ -38,7 +38,7 @@ struct GDTR {
 	uint64_t	base;
 } __attribute__((packed));
 
-void init_arch_tables(void);
+void arch_tables_init(void);
 void setup_gdt(void);
 void setup_tss(void);
 void load_cpu_registers(void);

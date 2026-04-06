@@ -1,5 +1,5 @@
-#include <kernel_base.h>
 #include <config.h>
+#include <kernel_base.h>
 #include <mm/pmm.h>
 #include <multiboot.h>	// usable_region 사용을 위해
 #include <serial.h>
@@ -151,24 +151,13 @@ void pmm_init_step2() {
 	PMM_DEBUG_DEC(last_region);
 	PMM_DEBUG_NEWLINE();
 
-	serial_write_hex64(usable_regions[last_region].start);
-	PMM_DEBUG_NEWLINE();
-	serial_write_hex64(usable_regions[last_region].end);
-	PMM_DEBUG_NEWLINE();
 	uint64_t page_num = (usable_regions[last_region].end - usable_regions[last_region].start) >> 12;
-	PMM_DEBUG_MSG(">");
-	PMM_DEBUG_NEWLINE();
-	PMM_DEBUG_DEC(page_num);
-	PMM_DEBUG_NEWLINE();
 		
 	uint64_t last_pivot_addr = usable_regions[last_region].start;
-	serial_write_hex64(last_pivot_addr);
-	PMM_DEBUG_NEWLINE();
 
 	for (uint32_t i = 0; i < page_num; i++) {
-		if (last_pivot_addr <= PMM_STEP_LIMIT) {
+		if (last_pivot_addr < PMM_STEP_LIMIT) {
 			last_pivot_addr += PAGE_SIZE;
-			// PMM_DEBUG_MSG(".");
 		} else {
 			pmm_free((void*)last_pivot_addr, 0);
 			pmm.total_pages++;

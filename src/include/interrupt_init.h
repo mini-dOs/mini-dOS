@@ -1,6 +1,6 @@
 #ifndef INTERRUPT_INIT_H
 #define INTERRUPT_INIT_H
 
-void init_interrupt_subsystem(void);
+void interrupt_subsystem_init(void);
 
 #endif

@@ -1,10 +1,10 @@
-#include <stdint.h>
-#include <string.h>
-#include <mm/pmm.h>
-#include <multiboot.h>
-#include <mm/paging.h>
 #include <early_alloc.h>
 #include <kernel_base.h>
+#include <mm/paging.h>
+#include <mm/pmm.h>
+#include <multiboot.h>
+#include <stdint.h>
+#include <string.h>
 
 // paging.h의 전역 변수 -> 모든 페이지 테이블의 기반
 uint64_t* pml4_root;

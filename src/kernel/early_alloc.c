@@ -1,6 +1,6 @@
-#include <kernel_base.h>
-#include <early_alloc.h>
 #include <cpu.h>
+#include <early_alloc.h>
+#include <kernel_base.h>
 
 static uint8_t *early_current;  // Next allocation position
 static uint8_t *early_end;      // Allocation limit
@@ -10,7 +10,7 @@ static uintptr_t align_up(uintptr_t addr, size_t align) {
     return (addr + align - 1) & ~(align - 1);
 }
 
-void init_early_alloc(void) {
+void early_alloc_init(void) {
     early_current = (uint8_t *)kernel_vma_end(); // Start right after the kernel
     early_end = early_current + EARLY_ALLOC_SIZE; // Reserve 1MB for early allocations
 }
