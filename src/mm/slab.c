@@ -2,9 +2,10 @@
 #include <kernel_info.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
+#include <mm/slab.h>
 #include <mm/vmm.h>
 
-#define KMEM_CACHE_COUNT 9
+kmem_cache_t kmem_cache_list[KMEM_CACHE_COUNT];	// KMEM_CACHE_COUNT는 9 (mm/slab.h)
 
 void* object_alloc(kmem_cache_t* kmem_cache) {
 	slab_t* slab;
@@ -85,8 +86,8 @@ void object_free(kmem_cache_t* kmem_cache, void* object) {
 		// empty가 없을 경우
 		if (kmem_cache->empty == NULL) kmem_cache->empty = slab;
 		// empty가 있을 경우
-		else pmm_free((void*)slab, 0);	// 4KB 페이지 반환
-	} // partial -> empry가 된 경우
+		else pmm_free((void*)virt_to_phys((void*)slab), 0);	// 4KB 페이지 반환
+	} // partial -> empty가 된 경우
 	else if (slab->free_count == kmem_cache->obj_capacity) {
 		slab_t* prev = kmem_cache->partial;
 
@@ -102,7 +103,7 @@ void object_free(kmem_cache_t* kmem_cache, void* object) {
 		// empty가 없을 경우
 		if (kmem_cache->empty == NULL) kmem_cache->empty = slab;
 		// empty가 있을 경우
-		else pmm_free((void*)slab, 0);	// 4KB 페이지 반환
+		else pmm_free((void*)virt_to_phys((void*)slab), 0);	// 4KB 페이지 반환
 	} // full -> partial이 된 경우
 	else if (slab->free_count == 1) {
 		slab_t* prev = kmem_cache->full;
@@ -145,10 +146,17 @@ void kfree(void* object) {
 }
 
 void slab_init(kmem_cache_t* kmem_cache, slab_t* slab) {
+	uint64_t obj_size = kmem_cache->obj_size;
+	uint64_t obj_capacity = kmem_cache->obj_capacity;
+	uint64_t header_size = (uint64_t)sizeof(slab_t);
+
 	slab->kmem_cache = kmem_cache;
 	slab->next = NULL;
-	slab->free_count = slab->kmem_cache->obj_capacity;
-	slab->free_list = (uint8_t*)slab + sizeof(slab_t);
+	slab->free_count = obj_capacity;
+	if (header_size % obj_size == 0)	// header가 obj 크기와 딱 맞을 경우
+		slab->free_list = (uint8_t*)slab + header_size;
+	else	// header가 obj 크기와 다를 경우; (header_size / obj_size + 1)을 통해 header가 obj보다 작을 경우도 산정
+		slab->free_list = (uint8_t*)slab + obj_size * (header_size / obj_size + 1);
 
 	void* prev = slab->free_list;
 
@@ -164,7 +172,11 @@ void kmem_cache_init() {
 
 	for (int i = 0; i < KMEM_CACHE_COUNT; i++) {
 		kmem_cache_list[i].obj_size = sizes[i];
-		kmem_cache_list[i].obj_capacity = (PAGE_SIZE - sizeof(slab_t)) / sizes[i];
+		// 패딩을 위한 로직
+		if (sizeof(slab_t) % sizes[i] == 0)
+			kmem_cache_list[i].obj_capacity = (PAGE_SIZE - sizeof(slab_t)) / sizes[i];
+		else
+			kmem_cache_list[i].obj_capacity = (PAGE_SIZE - (sizes[i] * (sizeof(slab_t) / sizes[i] + 1))) / sizes[i];
 		kmem_cache_list[i].full = NULL;
 		kmem_cache_list[i].partial = NULL;
 		kmem_cache_list[i].empty = NULL;

@@ -24,7 +24,7 @@ typedef struct kmem_cache {
 	slab_t* empty;		// 얘만 Linked List 아님
 } kmem_cache_t;
 
-kmem_cache_t kmem_cache_list[KMEM_CACHE_COUNT];
+extern kmem_cache_t kmem_cache_list[KMEM_CACHE_COUNT];
 
 void* object_alloc(kmem_cache_t* kmem_cache);
 void object_free(kmem_cache_t* kmem_cache, void* object);
