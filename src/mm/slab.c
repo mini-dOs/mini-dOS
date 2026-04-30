@@ -4,6 +4,7 @@
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
+#include <stddef.h>
 
 kmem_cache_t kmem_cache_list[KMEM_CACHE_COUNT];	// KMEM_CACHE_COUNT는 9 (mm/slab.h)
 
@@ -128,7 +129,7 @@ void* kmalloc(uint64_t size) {
 
 	int i = 0;
 	for (i = 0; i < KMEM_CACHE_COUNT; i++) {
-		if (size <= (8 << i)) break;
+		if (size <= (8ULL << i)) break;
 	}
 
 	// 8B ~ 2KB 담당
@@ -160,7 +161,7 @@ void slab_init(kmem_cache_t* kmem_cache, slab_t* slab) {
 
 	void* prev = slab->free_list;
 
-	for (int i = 0; i < slab->kmem_cache->obj_capacity - 1; i++) {
+	for (uint64_t i = 0; i < slab->kmem_cache->obj_capacity - 1; i++) {
 		*((uintptr_t*)prev) = (uintptr_t)((uint8_t*)prev + slab->kmem_cache->obj_size);
 		prev = (void*)*((uintptr_t*)prev);
 	}

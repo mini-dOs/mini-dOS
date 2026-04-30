@@ -1,11 +1,13 @@
 #include <config.h>
 #include <cpu.h>
 #include <early_alloc.h>
+#include <framebuffer.h>
 #include <gdt.h>
 #include <idt.h>
 #include <interrupt_init.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
+#include <mm/slab.h>
 #include <multiboot.h>
 #include <serial.h>
 #include <stdint.h>
@@ -36,6 +38,11 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     pmm_init_step2();
 
     interrupt_subsystem_init();
+    framebuffer_init();		// VESA/VBE framebuffer
+    serial_write("framebuffer_addr: ");
+    serial_write_hex64(fb_info.framebuffer_addr);
+    serial_write("\r\n");
+    framebuffer_clear(0x00FFFFFF);
 
     // Turn on the Interrupt Switch of CPU
     sti();

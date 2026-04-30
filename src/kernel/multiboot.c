@@ -8,6 +8,7 @@
 extern char _kernel_end[];
 
 memory_region_t *usable_regions;
+fb_info_t fb_info;
 uint32_t usable_region_count;
 
 // Utility
@@ -218,14 +219,25 @@ void multiboot_parse(void *mb_info) {
     struct multiboot_tag *tag;
 
     tag = (struct multiboot_tag *)((uint8_t *)mb_info + 8);
+    // mb_info에는 GRUB이 메모리에 써놓은 구조체의 시작 주소가 들어있음
+    // 앞의 8B는 [총 크기 4B][예약 4B]가 들어있음 -> 그래서 mb_info + 8
+    // 그 이후에는 태그가 들어있음 (여기서 말하는 태그는 boot.s의 요청 태그와는 다른 것
 
     // Iterate all multiboot tags
     while (tag->type != MULTIBOOT_TAG_TYPE_END) {
         if (tag->type == MULTIBOOT_TAG_TYPE_MMAP) {
             parse_mmap((struct multiboot_tag_mmap *)tag);
-        }
+        } else if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER) {
+	    struct multiboot_tag_framebuffer* fb_tag = (struct multiboot_tag_framebuffer*)tag;
+	    fb_info.framebuffer_addr	= fb_tag->common.framebuffer_addr;
+	    fb_info.framebuffer_pitch	= fb_tag->common.framebuffer_pitch;
+	    fb_info.framebuffer_width	= fb_tag->common.framebuffer_width;
+	    fb_info.framebuffer_height	= fb_tag->common.framebuffer_height;
+	    fb_info.framebuffer_bpp	= fb_tag->common.framebuffer_bpp;
+	    fb_info.framebuffer_type	= fb_tag->common.framebuffer_type;
+	}
 
-        // Move to next aligned tag
+        // Move to next aligned tag (7을 더하고 8바이트 단위로 자름으로써 8바이트 단위 align)
         tag = (struct multiboot_tag *)((uint8_t *)tag + ((tag->size + 7) & ~7));
     }
 
