@@ -10,18 +10,61 @@ static uint32_t	fb_width;
 static uint32_t	fb_height;
 static uint8_t	fb_bpp;
 
-void framebuffer_put_pixel(uint32_t x, uint32_t y, uint32_t color) {
-	*(uint32_t*)(fb_base + (x * (fb_bpp / 8)) + (y * fb_pitch)) = color;
+uint8_t* fb_get_base() {
+	return fb_base;
 }
 
-void framebuffer_clear(uint32_t color) {
-	for (uint32_t y = 0; y < fb_height; y++) {
-		for (uint32_t x = 0; x < fb_width; x++)
-			*(uint32_t*)(fb_base + (x * (fb_bpp / 8)) + (y * fb_pitch)) = color;
+uint32_t fb_get_pitch() {
+	return fb_pitch;
+}
+
+uint32_t fb_get_width() {
+	return fb_width;
+}
+
+uint32_t fb_get_height() {
+	return fb_height;
+}
+
+uint8_t fb_get_bpp() {
+	return fb_bpp;
+}
+
+void fb_paint_pixel(uint32_t x, uint32_t y, uint32_t color) {
+	uint8_t* ptr = fb_base + (x * (fb_bpp / 8)) + (y * fb_pitch);
+
+	// code-review에 따른 수정
+	switch (fb_bpp) {
+		case 32:
+			*(uint32_t*)ptr = color;
+			break;
+		case 16:
+			*(uint16_t*)ptr = (uint16_t)color;
+			break;
 	}
 }
 
-void framebuffer_init() {
+void fb_clear(uint32_t color) {
+	// code-review에 따른 수정
+	switch (fb_bpp) {
+		case 32:
+			for (uint32_t y = 0; y < fb_height; y++) {
+				uint32_t* row = fb_base + (y * fb_pitch);
+				for (uint32_t x = 0; x < fb_width; x++)
+					row[x] = color;
+			}
+			break;
+		case 16:
+			for (uint32_t y = 0; y < fb_height; y++) {
+				uint16_t* row = fb_base + (y * fb_pitch);
+				for (uint32_t x = 0; x < fb_width; x++)
+					row[x] = (uint16_t)color;
+			}
+			break;
+	}
+}
+
+void fb_init() {
 	fb_base		= (uint8_t*)phys_to_virt((uintptr_t)fb_info.framebuffer_addr);
 	fb_pitch	= fb_info.framebuffer_pitch;
 	fb_width	= fb_info.framebuffer_width;
