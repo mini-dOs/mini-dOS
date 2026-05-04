@@ -1,6 +1,7 @@
 #include <font.h>
+#include <stdint.h>
 
-uint8_t font[128][FONT_H] = {
+uint8_t font[128][FONT_HEIGHT] = {
 	[0]	= {0},	// 0x00 (NULL)
 	// 0x00(NULL)부터 0x20(Space)까지는 폰트가 필요 없음
 	[32]	= {0},	// 0x32 (SPACE)

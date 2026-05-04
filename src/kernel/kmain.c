@@ -38,11 +38,14 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     pmm_init_step2();
 
     interrupt_subsystem_init();
-    framebuffer_init();		// VESA/VBE framebuffer
-    serial_write("framebuffer_addr: ");
-    serial_write_hex64(fb_info.framebuffer_addr);
+    fb_init();		// GOP framebuffer
+    serial_write("fb_pitch: ");
+    serial_write_dec(fb_get_pitch());
+    serial_write("\r\nfb_width: ");
+    serial_write_dec(fb_get_width());
     serial_write("\r\n");
-    framebuffer_clear(0x00FFFFFF);
+    fb_clear(0x00FFFFFF);
+    fb_write(10, 10, "Is it over?", 0x00FF0000, 3);
 
     // Turn on the Interrupt Switch of CPU
     sti();

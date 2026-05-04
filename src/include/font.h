@@ -1,9 +1,11 @@
 #ifndef FONT_H
 #define FONT_H
 
-#define FONT_W 8
-#define FONT_H 8
+#include <stdint.h>
 
-extern uint8_t font[128][FONT_H];
+#define FONT_WIDTH	8
+#define FONT_HEIGHT	8
+
+extern uint8_t font[128][FONT_HEIGHT];
 
 #endif
