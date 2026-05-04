@@ -37,26 +37,46 @@ void vmm_init(void)
     asm volatile("mov %0, %%cr3" :: "r"(virt_to_phys(pml4_root)) : "memory");
 }
 
-static inline void invlpg(uint64_t va)
+// 단일 코어 가정 — invlpg는 paging.h의 inline 사용, TLB shootdown 없음.
+
+int vmm_map_phys(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
 {
-    asm volatile("invlpg (%0)" :: "r"(va) : "memory");
+    // TODO:
+    // 1. (flags & PAGE_PS)면 2MB 경로, 아니면 4KB 경로 선택
+    //    - 2MB 경로: va/pa/size가 PAGE_2MB 정렬인지 검증, 아니면 -1
+    //    - 4KB 경로: size를 PAGE_SIZE 단위로 올림 정렬
+    // 2. 루프: map_page / map_page_2mb 호출 (반환값 0이 아니면 롤백 후 -1)
+    // 3. 각 페이지마다 invlpg(va)
+    // 4. 성공 0, 실패 -1
+    return -1;
 }
 
-int vmm_map(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
+int vmm_alloc(uint64_t va, uint64_t size, uint64_t flags)
 {
-    // TODO: 구현
-    // 1. size를 PAGE_SIZE 단위로 올림 정렬
-    // 2. 루프: map_page(pml4_root, va, pa, flags) 호출
-    // 3. 각 페이지마다 invlpg(va) 호출
-    // 4. 성공 시 0, 실패 시 -1 반환
+    // TODO:
+    // 1. size를 페이지 크기 단위로 올림 정렬
+    // 2. 페이지 단위 루프:
+    //    - pmm_alloc(order)로 프레임 확보 (실패 시 지금까지 매핑 롤백 후 -1)
+    //    - map_page(pml4_root, va, pa, flags) 호출
+    //    - invlpg(va)
+    // 3. 성공 0, 실패 -1
     return -1;
 }
 
 void vmm_unmap(uint64_t va, uint64_t size)
 {
-    // TODO: 구현
-    // 1. size를 PAGE_SIZE 단위로 올림 정렬
-    // 2. 루프: 페이지 테이블 엔트리를 찾아서 0으로 클리어
-    // 3. 각 페이지마다 invlpg(va) 호출
-    // 4. (선택) 물리 프레임을 pmm_free()로 반환
+    // TODO: 호출자 소유 PA를 가진 매핑 해제 (pmm_free 호출하지 않음)
+    // 1. size를 페이지 크기 단위로 올림 정렬
+    // 2. 루프: unmap_page(pml4_root, va) 호출 (반환값 PA는 버림)
+    // 3. 각 페이지마다 invlpg(va)
+}
+
+void vmm_free(uint64_t va, uint64_t size)
+{
+    // TODO: VMM 소유 매핑 해제 + 물리 프레임 반환
+    // 1. size를 페이지 크기 단위로 올림 정렬
+    // 2. 루프:
+    //    - pa = unmap_page(pml4_root, va)
+    //    - pa != 0이면 pmm_free((void*)pa, 0)
+    //    - invlpg(va)
 }

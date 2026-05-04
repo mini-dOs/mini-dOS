@@ -21,6 +21,13 @@ typedef uint64_t page_table_t[512]; // Page Table (512 entries)
 int map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
 void map_page_2mb(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
 
+// 매핑 해제 후 해제된 PTE의 물리 주소를 반환 (없으면 0).
+// 단일 코어 가정 — TLB shootdown 없음, 로컬 invlpg만 수행.
 uint64_t unmap_page(uint64_t* pml4, uint64_t va);
+
+static inline void invlpg(uint64_t va)
+{
+    asm volatile("invlpg (%0)" :: "r"(va) : "memory");
+}
 
 #endif // PAGING_H
