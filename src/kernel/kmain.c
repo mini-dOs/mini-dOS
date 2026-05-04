@@ -39,13 +39,8 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
 
     interrupt_subsystem_init();
     fb_init();		// GOP framebuffer
-    serial_write("fb_pitch: ");
-    serial_write_dec(fb_get_pitch());
-    serial_write("\r\nfb_width: ");
-    serial_write_dec(fb_get_width());
-    serial_write("\r\n");
-    fb_clear(0x00FFFFFF);
-    fb_write(10, 10, "Is it over?", 0x00FF0000, 3);
+    fb_clear(0x001E1E1E);
+    fb_write(170, 270, "Hello mini-dOS!", 0x00B4B4B4, 4);
 
     // Turn on the Interrupt Switch of CPU
     sti();
