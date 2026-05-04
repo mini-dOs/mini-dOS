@@ -36,3 +36,27 @@ void vmm_init(void)
     // CR3 switch (must use physical address)
     asm volatile("mov %0, %%cr3" :: "r"(virt_to_phys(pml4_root)) : "memory");
 }
+
+static inline void invlpg(uint64_t va)
+{
+    asm volatile("invlpg (%0)" :: "r"(va) : "memory");
+}
+
+int vmm_map(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
+{
+    // TODO: 구현
+    // 1. size를 PAGE_SIZE 단위로 올림 정렬
+    // 2. 루프: map_page(pml4_root, va, pa, flags) 호출
+    // 3. 각 페이지마다 invlpg(va) 호출
+    // 4. 성공 시 0, 실패 시 -1 반환
+    return -1;
+}
+
+void vmm_unmap(uint64_t va, uint64_t size)
+{
+    // TODO: 구현
+    // 1. size를 PAGE_SIZE 단위로 올림 정렬
+    // 2. 루프: 페이지 테이블 엔트리를 찾아서 0으로 클리어
+    // 3. 각 페이지마다 invlpg(va) 호출
+    // 4. (선택) 물리 프레임을 pmm_free()로 반환
+}

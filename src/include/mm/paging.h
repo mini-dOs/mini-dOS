@@ -18,7 +18,9 @@ typedef uint64_t page_table_t[512]; // Page Table (512 entries)
 
 #define PAGE_ADDR_MASK  0x000FFFFFFFFFF000ULL
 
-void map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
+int map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
 void map_page_2mb(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
+
+uint64_t unmap_page(uint64_t* pml4, uint64_t va);
 
 #endif // PAGING_H
