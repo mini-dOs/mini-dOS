@@ -48,6 +48,7 @@ int vmm_map_phys(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
     // 2. 루프: map_page / map_page_2mb 호출 (반환값 0이 아니면 롤백 후 -1)
     // 3. 각 페이지마다 invlpg(va)
     // 4. 성공 0, 실패 -1
+    (void)va; (void)pa; (void)size; (void)flags;
     return -1;
 }
 
@@ -60,6 +61,7 @@ int vmm_alloc(uint64_t va, uint64_t size, uint64_t flags)
     //    - map_page(pml4_root, va, pa, flags) 호출
     //    - invlpg(va)
     // 3. 성공 0, 실패 -1
+    (void)va; (void)size; (void)flags;
     return -1;
 }
 
@@ -69,6 +71,7 @@ void vmm_unmap(uint64_t va, uint64_t size)
     // 1. size를 페이지 크기 단위로 올림 정렬
     // 2. 루프: unmap_page(pml4_root, va) 호출 (반환값 PA는 버림)
     // 3. 각 페이지마다 invlpg(va)
+    (void)va; (void)size;
 }
 
 void vmm_free(uint64_t va, uint64_t size)
@@ -79,4 +82,5 @@ void vmm_free(uint64_t va, uint64_t size)
     //    - pa = unmap_page(pml4_root, va)
     //    - pa != 0이면 pmm_free((void*)pa, 0)
     //    - invlpg(va)
+    (void)va; (void)size;
 }
