@@ -13,7 +13,7 @@ mb2_start:
   .long MB2_HDR_LEN
   .long MB2_CHECKSUM
 
-  /* framebuffer tag (VESA/VBE framebuffer) */
+  /* framebuffer tag (GOP framebuffer) */
   .align 8
   .short 5	// type
   .short 1	// flags (0 or 1)
