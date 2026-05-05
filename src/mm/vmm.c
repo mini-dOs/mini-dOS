@@ -1,3 +1,6 @@
+#include "kernel_info.h"
+#include <cpu.h>
+#include <serial.h>
 #include <early_alloc.h>
 #include <kernel_base.h>
 #include <mm/paging.h>
@@ -9,7 +12,14 @@
 
 void vmm_init(void)
 {
-    pml4_root = phys_to_virt((uintptr_t)pmm_alloc(0));
+    void* p = pmm_alloc(0);
+    if (!p) {
+        serial_write("[vmm.c] vmm_init OOM allocating PML4\n");
+        for (;;)
+            hlt();
+    }
+
+    pml4_root = phys_to_virt((uintptr_t)p);
     memset(pml4_root, 0, PAGE_SIZE);
 
     uint64_t start = (uint64_t)kernel_vma();
@@ -20,7 +30,11 @@ void vmm_init(void)
     end = (end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
     for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
-        map_page(pml4_root, addr, kernel_virt_to_phys((void*)addr), PAGE_RW);
+        if (map_page(pml4_root, addr, kernel_virt_to_phys((void*)addr), PAGE_RW) < 0) {
+            serial_write("[vmm.c] vmm_init OOM mapping kernel image\n");
+            for (;;)
+                hlt();
+        }
     }
 
     for (uint32_t i = 0; i < usable_region_count; i++) {
@@ -29,7 +43,11 @@ void vmm_init(void)
 
         for (uint64_t phys_addr = usable_start; phys_addr < usable_end; phys_addr += PAGE_2MB) {
             uint64_t va = (uint64_t)phys_to_virt(phys_addr);
-            map_page_2mb(pml4_root, va, phys_addr, PAGE_RW | PAGE_PS);
+            if (map_page_2mb(pml4_root, va, phys_addr, PAGE_RW | PAGE_PS) < 0) {
+                serial_write("[vmm.c] vmm_init OOM mapping direct-map\n");
+                for (;;)
+                    hlt();
+            }
         }
     }
 
@@ -37,19 +55,42 @@ void vmm_init(void)
     asm volatile("mov %0, %%cr3" :: "r"(virt_to_phys(pml4_root)) : "memory");
 }
 
-// 단일 코어 가정 — invlpg는 paging.h의 inline 사용, TLB shootdown 없음.
-
 int vmm_map_phys(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
 {
-    // TODO:
-    // 1. (flags & PAGE_PS)면 2MB 경로, 아니면 4KB 경로 선택
-    //    - 2MB 경로: va/pa/size가 PAGE_2MB 정렬인지 검증, 아니면 -1
-    //    - 4KB 경로: size를 PAGE_SIZE 단위로 올림 정렬
-    // 2. 루프: map_page / map_page_2mb 호출 (반환값 0이 아니면 롤백 후 -1)
-    // 3. 각 페이지마다 invlpg(va)
-    // 4. 성공 0, 실패 -1
-    (void)va; (void)pa; (void)size; (void)flags;
-    return -1;
+    if (flags & PAGE_PS) {
+        // 2MB
+        if ((va | pa | size) & (PAGE_2MB - 1))
+            return -1;
+        
+        for (uint64_t offset = 0; offset < size; offset += PAGE_2MB) {
+            if (map_page_2mb(pml4_root, va + offset, pa + offset, flags) < 0) {
+                for (uint64_t roll = 0; roll < offset; roll += PAGE_2MB) {
+                    unmap_page_2mb(pml4_root, va + roll);
+                    invlpg(va + roll);
+                }
+                return -1;
+            } 
+            invlpg(va + offset);
+        }
+    } else {
+        // 4KB
+        if ((va | pa) & (PAGE_SIZE - 1))
+            return -1;
+        size = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+
+        for (uint64_t offset = 0; offset < size; offset += PAGE_SIZE) {
+            if (map_page(pml4_root, va + offset, pa + offset, flags) < 0) {
+                for (uint64_t roll = 0; roll < offset; roll += PAGE_SIZE) {
+                    unmap_page(pml4_root, va + roll);
+                    invlpg(va + roll);
+                }
+                return -1;
+            } 
+            invlpg(va + offset);
+        }
+    }
+
+    return 0;
 }
 
 int vmm_alloc(uint64_t va, uint64_t size, uint64_t flags)
@@ -65,13 +106,40 @@ int vmm_alloc(uint64_t va, uint64_t size, uint64_t flags)
     return -1;
 }
 
+static uint64_t walk_step(uint64_t va) {
+    uint64_t pml4_i = (va >> 39) & 0x1FF;
+    uint64_t pdpt_i = (va >> 30) & 0x1FF;
+    uint64_t pd_i   = (va >> 21) & 0x1FF;
+
+    if (!(pml4_root[pml4_i] & PAGE_PRESENT))
+        return PAGE_SIZE;
+    
+    uint64_t* pdpt = phys_to_virt(pml4_root[pml4_i] & PAGE_ADDR_MASK);
+    if (!(pdpt[pdpt_i] & PAGE_PRESENT))
+        return PAGE_SIZE;
+
+    uint64_t* pd = phys_to_virt(pdpt[pdpt_i] & PAGE_ADDR_MASK);
+    if ((pd[pd_i] & PAGE_PRESENT) && (pd[pd_i] & PAGE_PS))
+        return PAGE_2MB;
+
+    return PAGE_SIZE;
+}
+
 void vmm_unmap(uint64_t va, uint64_t size)
 {
-    // TODO: 호출자 소유 PA를 가진 매핑 해제 (pmm_free 호출하지 않음)
-    // 1. size를 페이지 크기 단위로 올림 정렬
-    // 2. 루프: unmap_page(pml4_root, va) 호출 (반환값 PA는 버림)
-    // 3. 각 페이지마다 invlpg(va)
-    (void)va; (void)size;
+    uint64_t end = va + size;
+
+    while (va < end) {
+        uint64_t step = walk_step(va);
+
+        if (step == PAGE_2MB)
+            unmap_page_2mb(pml4_root, va);
+        else
+            unmap_page(pml4_root, va);
+
+        invlpg(va);
+        va += step;
+    }
 }
 
 void vmm_free(uint64_t va, uint64_t size)
