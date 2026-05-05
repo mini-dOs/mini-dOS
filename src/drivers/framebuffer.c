@@ -128,9 +128,13 @@ void fb_clear(uint32_t color) {
 			}
 			break;
 		case 24:
+			// code-review 내용 참고하여 수정
 			for (uint32_t y = 0; y < fb_height; y++) {
+				uint8_t* row = fb_base + (y * fb_pitch);
 				for (uint32_t x = 0; x <fb_width; x++) {
-					fb_paint_pixel(x, y, color);
+					row[x * 3 + 0] = color & 0xFF;
+					row[x * 3 + 1] = (color >> 8) & 0xFF;
+					row[x * 3 + 2] = (color >> 16) & 0xFF;
 				}
 			}
 			break;
