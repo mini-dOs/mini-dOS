@@ -43,7 +43,9 @@ void vmm_init(void)
 
         for (uint64_t phys_addr = usable_start; phys_addr < usable_end; phys_addr += PAGE_2MB) {
             uint64_t va = (uint64_t)phys_to_virt(phys_addr);
-            if (map_page_2mb(pml4_root, va, phys_addr, PAGE_RW | PAGE_PS) < 0) {
+            // 인접 region이 2MB round-up으로 같은 페이지에 떨어지면 EEXIST 발생 → 정상
+            int rc = map_page_2mb(pml4_root, va, phys_addr, PAGE_RW | PAGE_PS);
+            if (rc == MAP_ENOMEM) {
                 serial_write("[vmm.c] vmm_init OOM mapping direct-map\n");
                 for (;;)
                     hlt();
@@ -59,9 +61,10 @@ int vmm_map_phys(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
 {
     if (flags & PAGE_PS) {
         // 2MB
-        if ((va | pa | size) & (PAGE_2MB - 1))
+        if ((va | pa) & (PAGE_2MB - 1))
             return -1;
-        
+        size = (size + PAGE_2MB - 1) & ~(PAGE_2MB - 1);
+
         for (uint64_t offset = 0; offset < size; offset += PAGE_2MB) {
             if (map_page_2mb(pml4_root, va + offset, pa + offset, flags) < 0) {
                 for (uint64_t roll = 0; roll < offset; roll += PAGE_2MB) {
