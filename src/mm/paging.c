@@ -61,6 +61,10 @@ int map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
 
     uint64_t* pt = (uint64_t*)phys_to_virt(pd[pd_i] & PAGE_ADDR_MASK);
 
+    // 이미 매핑된 엔트리는 호출자가 결정하도록 EEXIST 반환
+    if (pt[pt_i] & PAGE_PRESENT)
+        return MAP_EEXIST;
+
     // PT -> Page
     pt[pt_i] = make_entry(pa, flags | PAGE_PRESENT);
     return 0;
@@ -129,9 +133,9 @@ int map_page_2mb(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags) {
 
     uint64_t* pd = (uint64_t*)phys_to_virt(pdpt[pdpt_i] & PAGE_ADDR_MASK);
 
-    // 이미 매핑된 엔트리가 있으면 건너뜀
+    // 이미 매핑된 엔트리는 호출자가 결정하도록 EEXIST 반환
     if (pd[pd_i] & PAGE_PRESENT)
-        return 0;
+        return MAP_EEXIST;
 
     pd[pd_i] = make_entry(pa, flags | PAGE_PRESENT);
     return 0;
