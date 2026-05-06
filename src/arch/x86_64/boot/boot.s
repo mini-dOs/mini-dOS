@@ -13,7 +13,17 @@ mb2_start:
   .long MB2_HDR_LEN
   .long MB2_CHECKSUM
 
+  /* framebuffer tag (GOP framebuffer) */
+  .align 8
+  .short 5	// type
+  .short 1	// flags (0 or 1)
+  .long 20	// size
+  .long 0	// width
+  .long 0	// height
+  .long 32	// depth
+
   /* end tag */
+  .align 8
   .short 0
   .short 0
   .long 8
@@ -345,8 +355,8 @@ start64:
   mov %ax, %gs
 
   /* 32-bit entry pushed EAX/EBX as 4-byte values: [rsp]=magic, [rsp+4]=info. */
-  mov (%rsp), %edi
-  mov 4(%rsp), %esi
+  mov (%rsp), %edi	/* multiboot_magic: kmain의 첫번째 인자 */
+  mov 4(%rsp), %esi	/* multiboot_info: kmain의 두번째 인자, 멀티부트2 정보 구조체의 물리 주소 */
   add $8, %rsp
   mov $stack_top_phys, %rsp
   and $-16, %rsp

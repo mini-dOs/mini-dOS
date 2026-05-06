@@ -45,17 +45,22 @@ GRUB + Multiboot2를 사용해 부팅하며, Long Mode로 진입한 뒤 C 커널
     │           ├── isr_table.c
     │           └── pic.c
     ├── drivers
+    │   ├── font.c
+    │   ├── framebuffer.c
     │   ├── keyboard.c
     │   └── serial.c
     ├── include
     │   ├── mm
     │   │   ├── paging.h
     │   │   ├── pmm.h
+    │   │   ├── slab.h
     │   │   └── vmm.h
     │   ├── config.h
     │   ├── cpu.h
     │   ├── early_alloc.h
     │   ├── exception.h
+    │   ├── font.h
+    │   ├── framebuffer.h
     │   ├── gdt.h
     │   ├── i8042.h
     │   ├── idt.h
@@ -68,14 +73,24 @@ GRUB + Multiboot2를 사용해 부팅하며, Long Mode로 진입한 뒤 C 커널
     │   ├── multiboot.h
     │   ├── multiboot2.h
     │   ├── pic.h
-    │   └── pit.h
+    │   ├── pit.h
+    │   ├── serial.h
+    │   └── string.h
     ├── kernel
-    │   └── kmain.c
+    │   ├── early_alloc.c
+    │   ├── exception.c
+    │   ├── interrupt.c
+    │   ├── interrupt_init.c
+    │   ├── irq.c
+    │   ├── kmain.c
+    │   ├── multiboot.c
+    │   └── pit.c
     ├── lib
     │   └── string.c
     └── mm
         ├── paging.c
         ├── pmm.c
+        ├── slab.c
         └── vmm.c
 ```
 
@@ -93,11 +108,11 @@ GRUB + Multiboot2를 사용해 부팅하며, Long Mode로 진입한 뒤 C 커널
 | **src/arch/x86_64/gdt/**        | GDT 및 TSS 초기화 코드                              |
 | **src/arch/x86_64/interrupt/**  | IDT, PIC, ISR 스텁 및 인터럽트 핸들러                   |
 | **src/kernel/**                 | 아키텍처와 독립적인 커널 핵심 코드                           |
-| **src/drivers/**                | 장치 드라이버 코드 (키보드, 시리얼)                         |
+| **src/drivers/**                | 장치 드라이버 코드 (키보드, 시리얼, 프레임버퍼, 폰트)              |
 | **src/lib/**                    | 커널 라이브러리 (string.c 등 freestanding 유틸리티)        |
-| **src/mm/**                     | 메모리 관리 (PMM, Paging, VMM)                     |
+| **src/mm/**                     | 메모리 관리 (PMM, Paging, VMM, Slab)               |
 | **src/include/**                | 커널 공용 헤더 파일                                   |
-| **src/include/mm/**             | 메모리 관리 관련 헤더 (paging, pmm, vmm)                |
+| **src/include/mm/**             | 메모리 관리 관련 헤더 (paging, pmm, vmm, slab)         |
 
 ---
 
