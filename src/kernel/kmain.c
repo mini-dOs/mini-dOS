@@ -1,11 +1,13 @@
 #include <config.h>
 #include <cpu.h>
 #include <early_alloc.h>
+#include <framebuffer.h>
 #include <gdt.h>
 #include <idt.h>
 #include <interrupt_init.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
+#include <mm/slab.h>
 #include <multiboot.h>
 #include <serial.h>
 #include <stdint.h>
@@ -36,6 +38,9 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     pmm_init_step2();
 
     interrupt_subsystem_init();
+    fb_init();		// GOP framebuffer
+    fb_clear(0x001E1E1E);
+    fb_write(170, 270, "Hello mini-dOS!", 0x00B4B4B4, 4);
 
     // Turn on the Interrupt Switch of CPU
     sti();

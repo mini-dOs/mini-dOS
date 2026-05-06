@@ -49,7 +49,7 @@
 #define MULTIBOOT_TAG_TYPE_BOOTDEV           5
 #define MULTIBOOT_TAG_TYPE_MMAP              6
 #define MULTIBOOT_TAG_TYPE_VBE               7
-#define MULTIBOOT_TAG_TYPE_FRAMEBUFFER       8
+#define MULTIBOOT_TAG_TYPE_FRAMEBUFFER       8	// VESA/VBE framebuffer를 위해 multiboot_parse에서 등록
 #define MULTIBOOT_TAG_TYPE_ELF_SECTIONS      9
 #define MULTIBOOT_TAG_TYPE_APM               10
 #define MULTIBOOT_TAG_TYPE_EFI32             11
