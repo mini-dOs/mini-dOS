@@ -18,6 +18,11 @@ typedef uint64_t page_table_t[512]; // Page Table (512 entries)
 
 #define PAGE_ADDR_MASK  0x000FFFFFFFFFF000ULL
 
+// 매핑 결과 코드 (음수 = 실패)
+#define MAP_OK      0
+#define MAP_ENOMEM (-1)
+#define MAP_EEXIST (-2)
+
 int map_page(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
 int map_page_2mb(uint64_t* pml4, uint64_t va, uint64_t pa, uint64_t flags);
 
