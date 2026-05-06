@@ -95,15 +95,41 @@ int vmm_map_phys(uint64_t va, uint64_t pa, uint64_t size, uint64_t flags)
 
 int vmm_alloc(uint64_t va, uint64_t size, uint64_t flags)
 {
-    // TODO:
-    // 1. size를 페이지 크기 단위로 올림 정렬
-    // 2. 페이지 단위 루프:
-    //    - pmm_alloc(order)로 프레임 확보 (실패 시 지금까지 매핑 롤백 후 -1)
-    //    - map_page(pml4_root, va, pa, flags) 호출
-    //    - invlpg(va)
-    // 3. 성공 0, 실패 -1
-    (void)va; (void)size; (void)flags;
-    return -1;
+    uint64_t page_size = (flags & PAGE_PS) ? PAGE_2MB : PAGE_SIZE;
+    uint32_t order     = (flags & PAGE_PS) ? 9 : 0;
+
+    if (va & (page_size - 1))
+        return -1;
+
+    size = (size + page_size - 1) & ~(page_size - 1);
+
+    for (uint64_t offset = 0; offset < size; offset += page_size) {
+        void* p = pmm_alloc(order);
+        int rc = -1;
+
+        if (p) {
+            uint64_t pa = (uint64_t)p;
+            rc = (page_size == PAGE_2MB)
+                ? map_page_2mb(pml4_root, va + offset, pa, flags)
+                : map_page(pml4_root, va + offset, pa, flags);
+            if (rc < 0)
+                pmm_free(p, order);
+        }
+
+        if (rc < 0) {
+            for (uint64_t roll = 0; roll < offset; roll += page_size) {
+                uint64_t roll_pa = (page_size == PAGE_2MB)
+                    ? unmap_page_2mb(pml4_root, va + roll)
+                    : unmap_page(pml4_root, va + roll);
+                invlpg(va + roll);
+                if (roll_pa)
+                    pmm_free((void*)roll_pa, order);
+            }
+            return -1;
+        }
+        invlpg(va + offset);
+    }
+    return 0;
 }
 
 static uint64_t walk_step(uint64_t va) {
@@ -144,11 +170,24 @@ void vmm_unmap(uint64_t va, uint64_t size)
 
 void vmm_free(uint64_t va, uint64_t size)
 {
-    // TODO: VMM 소유 매핑 해제 + 물리 프레임 반환
-    // 1. size를 페이지 크기 단위로 올림 정렬
-    // 2. 루프:
-    //    - pa = unmap_page(pml4_root, va)
-    //    - pa != 0이면 pmm_free((void*)pa, 0)
-    //    - invlpg(va)
-    (void)va; (void)size;
+    uint64_t end = va + size;
+
+    while (va < end) {
+        uint64_t step = walk_step(va);
+        uint64_t pa;
+        uint32_t order;
+
+        if (step == PAGE_2MB) {
+            pa = unmap_page_2mb(pml4_root, va);
+            order = 9;
+        } else {
+            pa = unmap_page(pml4_root, va);
+            order = 0;
+        }
+
+        invlpg(va);
+        if (pa)
+            pmm_free((void*)pa, order);
+        va += step;
+    }
 }
