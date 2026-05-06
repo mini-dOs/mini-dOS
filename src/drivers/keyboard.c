@@ -35,6 +35,14 @@
 #define F12		0
 #define Other		0
 
+typedef struct RingBuffer {
+	char buf[4096];
+	uint16_t head;
+	uint16_t tail;
+} RingBuffer_t;
+
+static RingBuffer_t rb;
+
 static uint8_t shift_pressed	= 0;
 static uint8_t caps_lock	= 0;
 
@@ -100,6 +108,27 @@ static const char keyboard_map_shift[] = {
 	Other,
 };
 
+static void keyboard_enqueue(char c) {
+	// 가득 찬 버퍼 체크
+	if (((rb.tail + 1) & 0xFFF) == rb.head) return;
+	
+	rb.buf[rb.tail] = c;
+	
+	rb.tail = (rb.tail + 1) & 0xFFF;	// if (rb.tail & 0x1000) rb.tail = 0;
+}
+
+char keyboard_dequeue() {
+	// 빈 버퍼 체크
+	if (rb.head == rb.tail) return '\0';
+
+	char c = rb.buf[rb.head];
+
+	rb.head = (rb.head + 1) & 0xFFF;	// if (rb.head & 0x1000) rb.head = 0;
+	
+	return c;
+}
+
+// ISR (Interrupt Service Routine)
 void keyboard_handler(interrupt_frame_t *f) {
 	// -Wall -Wextra 경고 옵션 때문에 컴파일 에러가 나는 것을 방지
 	// 인자로 받았기 때문에 언급은 해야 함
@@ -134,6 +163,7 @@ void keyboard_handler(interrupt_frame_t *f) {
 
 	// ASCII 코드만 출력
 	if (c > 0) {
+		keyboard_enqueue(c);
 		char buf[2] = {c, 0};
 		serial_write(buf);
 	}
