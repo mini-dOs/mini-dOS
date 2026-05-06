@@ -7,6 +7,7 @@
 #include <interrupt_init.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
+#include <mm/vmm.h>
 #include <mm/slab.h>
 #include <multiboot.h>
 #include <serial.h>
@@ -32,8 +33,8 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     
     pmm_init_step1();
 
-    paging_init();
-    serial_write("Paging initialized\r\n");
+    vmm_init();
+    serial_write("VMM initialized\r\n");
 
     pmm_init_step2();
 
