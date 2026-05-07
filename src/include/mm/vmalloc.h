@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 void vmalloc_init(void);
+
+// 내부 list가 잠금 없이 동작하므로 IRQ 컨텍스트에서 호출 금지
 void *vmalloc(uint64_t size);
 void vfree(void *ptr);
 
