@@ -9,6 +9,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/slab.h>
+#include <mm/vmalloc.h>
 #include <multiboot.h>
 #include <serial.h>
 #include <stdint.h>
@@ -37,6 +38,46 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     serial_write("VMM initialized\r\n");
 
     pmm_init_step2();
+
+    kmem_cache_init();
+    vmalloc_init();
+    serial_write("VMALLOC initialized\r\n");
+
+    // ── vmalloc smoke test ─────────────────────────────
+    serial_write("\r\n[vmalloc test] start\r\n");
+    vmalloc_dump();
+
+    void *a = vmalloc(0x1000);   // 4KB
+    void *b = vmalloc(0x4000);   // 16KB
+    void *c = vmalloc(0x1000);   // 4KB
+    serial_write("a="); serial_write_hex64((uint64_t)a); serial_write("\r\n");
+    serial_write("b="); serial_write_hex64((uint64_t)b); serial_write("\r\n");
+    serial_write("c="); serial_write_hex64((uint64_t)c); serial_write("\r\n");
+    vmalloc_dump();
+
+    // 실제 매핑 동작 확인 (#PF 안 나야 정상)
+    *(volatile uint64_t *)a = 0xCAFEBABEULL;
+    *(volatile uint64_t *)b = 0xDEADBEEFULL;
+    serial_write("write OK\r\n");
+
+    // 가운데 free → 같은 자리 재사용 확인
+    vfree(b);
+    serial_write("after vfree(b)\r\n");
+    vmalloc_dump();
+
+    void *d = vmalloc(0x4000);
+    serial_write("d="); serial_write_hex64((uint64_t)d); serial_write("\r\n");
+    if (d == b) serial_write("first-fit OK (d == b)\r\n");
+    else        serial_write("first-fit FAIL\r\n");
+
+    // 모두 해제 → 노드 1개로 회복
+    vfree(a);
+    vfree(c);
+    vfree(d);
+    serial_write("after all vfree\r\n");
+    vmalloc_dump();
+    serial_write("[vmalloc test] end\r\n\r\n");
+    // ────────────────────────────────────────────────────
 
     interrupt_subsystem_init();
     fb_init();		// GOP framebuffer
