@@ -33,6 +33,8 @@ void vmalloc_init(void) {
 void *vmalloc(uint64_t size) {
     if (size == 0)
         return NULL;
+    if (size > (VMALLOC_END - VMALLOC_START))
+        return NULL;
     size = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
     
     // first-fit
@@ -51,8 +53,7 @@ void *vmalloc(uint64_t size) {
         vm_area_t *rest = kmalloc(sizeof(vm_area_t));
         if (rest == NULL) {
             serial_write("[vmalloc] node OOM\n");
-            for (;;)
-                hlt();
+            return NULL;
         }
         rest->addr    = cur->addr + size;
         rest->size    = cur->size - size;
