@@ -1,74 +1,128 @@
 # ---------------------------------
-# toolchain (fixed)
+# toolchain
 # ---------------------------------
 
 PREFIX := /opt/cross
 CC := $(PREFIX)/bin/x86_64-elf-gcc
 AS := $(PREFIX)/bin/x86_64-elf-as
 
-SRC := src
-BUILD := build
+BUILD  := build
 ISODIR := isodir
 
-CFLAGS_BASE := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector -fno-pie -mno-red-zone -Wall -Wextra -I $(SRC)/include
-CFLAGS_DEBUG := $(CFLAGS_BASE) -O0 -g3 -fno-omit-frame-pointer
+# ---------------------------------
+# source layout
+# ---------------------------------
+# Kernel side (everything except libc impls and doom)
+KSRC_DIRS := arch drivers init kernel mm
+# libc impl
+LSRC_DIR  := libc/src
+# DOOM
+DSRC_DIR  := doom
+
+# ---------------------------------
+# include paths
+# ---------------------------------
+# Kernel: own headers + libc shims (for memcpy/memset etc.)
+KERNEL_INC := -I include -I libc/include
+# libc impl: libc headers + kernel headers (so it can call kmalloc, serial_*, etc.)
+LIBC_INC   := -I libc/include -I include
+# DOOM: ONLY libc — kernel internals are walled off
+DOOM_INC   := -I libc/include -I doom
+
+# ---------------------------------
+# CFLAGS
+# ---------------------------------
+CFLAGS_BASE    := -ffreestanding -m64 -mcmodel=kernel -fno-stack-protector \
+                  -fno-pie -mno-red-zone -Wall -Wextra
+CFLAGS_DEBUG   := $(CFLAGS_BASE) -O0 -g3 -fno-omit-frame-pointer
 CFLAGS_RELEASE := $(CFLAGS_BASE) -O2 -g
-CFLAGS ?= $(CFLAGS_RELEASE)
+CFLAGS         ?= $(CFLAGS_RELEASE)
+
 LDFLAGS := -ffreestanding -nostdlib -no-pie -Wl,--build-id=none -Wl,-z,noexecstack
+
+# DOOM (1993 K&R-ish) needs warning relaxation so it can compile against our
+# minimal libc shims. Goal: compile cleanly so the linker reports the *exact*
+# libc symbols we still need to implement.
+DOOM_CFLAGS := -Wno-implicit-function-declaration \
+               -Wno-int-conversion \
+               -Wno-builtin-declaration-mismatch \
+               -Wno-incompatible-pointer-types \
+               -Wno-pointer-sign \
+               -Wno-unused-parameter \
+               -Wno-unused-variable \
+               -Wno-unused-but-set-variable \
+               -Wno-unused-function \
+               -Wno-sign-compare \
+               -Wno-format \
+               -Wno-implicit-int \
+               -Wno-discarded-qualifiers \
+               -fno-strict-aliasing \
+               -fno-builtin
 
 # ---------------------------------
 # source discovery
 # ---------------------------------
+KERNEL_C_SRCS := $(shell find $(KSRC_DIRS) -name "*.c")
+KERNEL_S_SRCS := $(shell find $(KSRC_DIRS) -name "*.S")
+KERNEL_s_SRCS := $(shell find $(KSRC_DIRS) -name "*.s")
 
-C_SOURCES := $(shell find $(SRC) -name "*.c")
-ASM_SOURCES_S := $(shell find $(SRC) -name "*.S")
-ASM_SOURCES_s := $(shell find $(SRC) -name "*.s")
+LIBC_C_SRCS   := $(shell find $(LSRC_DIR) -name "*.c" 2>/dev/null)
+
+DOOM_C_SRCS   := $(shell find $(DSRC_DIR) -name "*.c" 2>/dev/null)
 
 # ---------------------------------
 # object files
 # ---------------------------------
+KERNEL_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(KERNEL_C_SRCS)) \
+               $(patsubst %.S,$(BUILD)/%.o,$(KERNEL_S_SRCS)) \
+               $(patsubst %.s,$(BUILD)/%.o,$(KERNEL_s_SRCS))
+LIBC_OBJS   := $(patsubst %.c,$(BUILD)/%.o,$(LIBC_C_SRCS))
+DOOM_OBJS   := $(patsubst %.c,$(BUILD)/%.o,$(DOOM_C_SRCS))
 
-C_OBJS := $(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(C_SOURCES))
-ASM_OBJS := $(patsubst $(SRC)/%.S,$(BUILD)/%.o,$(ASM_SOURCES_S))
-ASM_OBJS += $(patsubst $(SRC)/%.s,$(BUILD)/%.o,$(ASM_SOURCES_s))
-
-OBJS := $(C_OBJS) $(ASM_OBJS)
+OBJS := $(KERNEL_OBJS) $(LIBC_OBJS) $(DOOM_OBJS)
 
 # ---------------------------------
 # targets
 # ---------------------------------
-
 .PHONY: all clean iso run run-debug
 
 all: $(BUILD)/kernel.elf
-
-# ---------------------------------
-# link kernel
-# ---------------------------------
 
 $(BUILD)/kernel.elf: $(OBJS)
 	$(CC) -T linker.ld -o $@ $(LDFLAGS) $(OBJS) -lgcc
 
 # ---------------------------------
 # compile rules
+# Order matters: more specific patterns must precede the generic ones
+# so GNU make picks the shorter-stem match.
 # ---------------------------------
 
-$(BUILD)/%.o: $(SRC)/%.c
+# DOOM .c
+$(BUILD)/doom/%.o: doom/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DOOM_INC) $(DOOM_CFLAGS) -c $< -o $@
 
-$(BUILD)/%.o: $(SRC)/%.S
+# libc impls
+$(BUILD)/libc/%.o: libc/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(LIBC_INC) -c $< -o $@
 
-$(BUILD)/%.o: $(SRC)/%.s
+# Kernel — generic rules
+$(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(KERNEL_INC) -c $< -o $@
+
+$(BUILD)/%.o: %.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(KERNEL_INC) -c $< -o $@
+
+$(BUILD)/%.o: %.s
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(KERNEL_INC) -c $< -o $@
 
 # ---------------------------------
-# ISO build (FINAL, stable)
+# ISO
 # ---------------------------------
-
 $(BUILD)/myos.iso: $(BUILD)/kernel.elf
 	@echo "[*] Preparing ISO directory"
 	mkdir -p $(ISODIR)/boot/grub
@@ -87,9 +141,8 @@ $(BUILD)/myos.iso: $(BUILD)/kernel.elf
 iso: $(BUILD)/myos.iso
 
 # ---------------------------------
-# run (UEFI - OVMF)
+# run
 # ---------------------------------
-
 run:
 	$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BUILD)/myos.iso
 	qemu-system-x86_64 \
@@ -120,7 +173,6 @@ run-debug:
 # ---------------------------------
 # clean
 # ---------------------------------
-
 clean:
 	rm -rf $(BUILD)
 	rm -f $(ISODIR)/boot/kernel.elf
