@@ -5,6 +5,7 @@
 #include <gdt.h>
 #include <idt.h>
 #include <interrupt_init.h>
+#include <mini_shell.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
@@ -82,7 +83,7 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     interrupt_subsystem_init();
     fb_init();		// GOP framebuffer
     fb_clear(0x001E1E1E);
-    fb_write(170, 270, "Hello mini-dOS!", 0x00B4B4B4, 4);
+    fb_write(170, 270, "Hello mini-dOS!", 0x00B4B4B4, 0x001E1E1E, 4);
 
     // Turn on the Interrupt Switch of CPU
     sti();
@@ -101,6 +102,8 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     // *bad = 0xDEADBEEFCAFEBABEULL; // 의도적 #PF (err_code=0x2)
     // serial_write("[TEST] unreachable\r\n");
 
+    shell_init();
+
     while (1)
-        hlt();
+      shell_wait();
 }

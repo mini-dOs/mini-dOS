@@ -33,7 +33,7 @@ uint8_t fb_get_bpp() {
 }
 
 // 문자 출력
-void fb_write_char(uint32_t x, uint32_t y, char c, uint32_t color, uint32_t scale) {
+void fb_write_char(uint32_t x, uint32_t y, char c, uint32_t font_color, uint32_t bg_color, uint32_t scale) {
 	// 헷갈려서 메모해 놓음
 	// i == y (가로 줄; 행)
 	// j == x (세로 줄; 열)
@@ -51,7 +51,13 @@ void fb_write_char(uint32_t x, uint32_t y, char c, uint32_t color, uint32_t scal
 				// scale만큼 반복하여 가로 세로 색칠
 				for (uint32_t s_i = 0; s_i < scale; s_i++) {
 					for (uint32_t s_j = 0; s_j < scale; s_j++) {
-						fb_paint_pixel(x + j * scale + s_j, y + i * scale + s_i, color);
+						fb_paint_pixel(x + j * scale + s_j, y + i * scale + s_i, font_color);
+					}
+				}
+			} else {
+				for (uint32_t s_i = 0; s_i < scale; s_i++) {
+					for (uint32_t s_j = 0; s_j < scale; s_j++) {
+						fb_paint_pixel(x + j * scale + s_j, y + i * scale + s_i, bg_color);
 					}
 				}
 			}
@@ -59,7 +65,7 @@ void fb_write_char(uint32_t x, uint32_t y, char c, uint32_t color, uint32_t scal
 	}
 }
 
-void fb_write(uint32_t x, uint32_t y, const char* str, uint32_t color, uint32_t scale) {
+void fb_write(uint32_t x, uint32_t y, const char* str, uint32_t font_color, uint32_t bg_color, uint32_t scale) {
 	uint32_t str_x = x;
 	uint32_t str_y = y;
 
@@ -70,7 +76,7 @@ void fb_write(uint32_t x, uint32_t y, const char* str, uint32_t color, uint32_t 
 			str_y += FONT_HEIGHT * scale;
 		}
 
-		fb_write_char(str_x, str_y, *str, color, scale);
+		fb_write_char(str_x, str_y, *str, font_color, bg_color, scale);
 
 		str_x += FONT_WIDTH * scale;
 		str++;	// 다음 글자

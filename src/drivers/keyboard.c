@@ -35,13 +35,13 @@
 #define F12		0
 #define Other		0
 
-typedef struct RingBuffer {
+typedef struct ring_buffer {
 	char buf[4096];
 	uint16_t head;
 	uint16_t tail;
-} RingBuffer_t;
+} ring_buffer_t;
 
-static RingBuffer_t rb;
+static ring_buffer_t rb;
 
 static uint8_t shift_pressed	= 0;
 static uint8_t caps_lock	= 0;
