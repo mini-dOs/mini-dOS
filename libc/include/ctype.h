@@ -1,8 +1,14 @@
 #ifndef _CTYPE_H
 #define _CTYPE_H
 
-/* DOOM uses tolower/toupper/isspace/isdigit/isalpha/isalnum/isprint/isxdigit.
- * We intentionally leave these undeclared so the linker reveals which ones
- * are actually called. Provide types-only stub. */
+extern int isalnum(int c);
+extern int isalpha(int c);
+extern int isdigit(int c);
+extern int isprint(int c);
+extern int isspace(int c);
+extern int isxdigit(int c);
+
+extern int toupper(int c);
+extern int tolower(int c);
 
 #endif
