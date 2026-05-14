@@ -13,5 +13,6 @@ typedef struct { int quot, rem; } div_t;
 typedef struct { long quot, rem; } ldiv_t;
 
 extern void *malloc(size_t size);
+extern void  free(void *);
 
 #endif
