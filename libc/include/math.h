@@ -9,4 +9,6 @@
 #define INFINITY   (__builtin_inff())
 #define NAN        (__builtin_nanf(""))
 
+extern double fabs(double x);
+
 #endif
