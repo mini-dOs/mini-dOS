@@ -1,6 +1,6 @@
-#include <stddef.h>
 #include <asm/cpu.h>
 #include <drivers/serial.h>
+#include <stddef.h>
 
 #define COM1 0x3F8
 

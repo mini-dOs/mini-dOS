@@ -1,7 +1,7 @@
 #include <asm/interrupt.h>
+#include <drivers/keyboard.h>
 #include <drivers/serial.h>
 #include <kernel/pit.h>
-#include <drivers/keyboard.h>
 
 static void timer_handler(interrupt_frame_t *f)
 {

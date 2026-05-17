@@ -1,6 +1,6 @@
-#include <stdint.h>
-#include <stddef.h>
 #include <asm/gdt.h>
+#include <stddef.h>
+#include <stdint.h>
 
 struct GDT_ENTRY	gdt_entry[7];	// GDT
 struct TSS_ENTRY	tss_entry;	// TSS == *GDT[5:6]

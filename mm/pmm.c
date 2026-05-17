@@ -1,25 +1,15 @@
+#include <drivers/serial.h>
 #include <kernel/config.h>
 #include <kernel/kernel_base.h>
-#include <mm/pmm.h>
 #include <kernel/multiboot.h>	// usable_region 사용을 위해
-#include <drivers/serial.h>
+#include <mm/page.h>
+#include <mm/pmm.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#ifdef PMM_DEBUG
-	#define	PMM_DEBUG_MSG(s)	serial_write(s)
-	#define	PMM_DEBUG_DEC(n)	serial_write_dec(n)
-	#define	PMM_DEBUG_NEWLINE()	serial_write("\r\n")
-#else
-	#define	PMM_DEBUG_MSG(s)	((void)0)
-	#define	PMM_DEBUG_DEC(n)	((void)0)
-	#define	PMM_DEBUG_NEWLINE()	((void)0)
-#endif
 
 uint32_t last_region;
 
 static buddy_pmm_t pmm;
-
 
 static void list_push(uint32_t order, block_t* blk) {
 	block_t* vblk = (block_t*)phys_to_virt((uintptr_t)blk);
@@ -90,7 +80,7 @@ void pmm_free(void* addr, uint32_t order) {
 
 	block_t* pivot = (block_t*)addr;
 	block_t* buddy = (block_t*)buddy_of((uint64_t)pivot, local_order);
-	
+
 	while (local_order < MAX_ORDER && list_remove(local_order, buddy)) {
 		pivot = (block_t*)((uint64_t)pivot & ~((uint64_t)PAGE_SIZE << local_order));
 		buddy = (block_t*)buddy_of((uint64_t)pivot, local_order + 1);
@@ -102,82 +92,94 @@ void pmm_free(void* addr, uint32_t order) {
 }
 
 void pmm_init_step1() {
-	PMM_DEBUG_NEWLINE();
-	PMM_DEBUG_MSG("[pmm_init_step1] start");
-	PMM_DEBUG_NEWLINE();
-	PMM_DEBUG_MSG("Usable Region Num: ");
-	PMM_DEBUG_DEC(usable_region_count);
-	PMM_DEBUG_NEWLINE();
-
-	uint64_t page_num = 0;
-
+	// 0 ~ 1GB의 usable_region들
 	for (uint32_t i = 0; i < usable_region_count; i++) {
-		PMM_DEBUG_MSG("Region #");
-		PMM_DEBUG_DEC(i);
-		PMM_DEBUG_NEWLINE();
-
-		page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
-		
+		uint32_t page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
 		uint64_t pivot_addr = usable_regions[i].start;
 
-		for (uint32_t j = 0; j < page_num; j++) {
-			if (pivot_addr < PMM_STEP_LIMIT) {
-				pmm_free((void*)pivot_addr, 0);
-				pmm.total_pages++;
+		// ---- DEBUG ----
 
-				pivot_addr += PAGE_SIZE;
-			} else {
-				last_region = i;
-				i = usable_region_count;
-				break;
+		serial_write("Region #");
+		serial_write_dec(i);
+
+		// ---------------
+
+		// 일반 usable_region; page_region은 page.h에 선언된 전역 변수로 page 구조체 배열이 들어갈 usable_region의 인덱스임
+		if (i != page_region) {
+			serial_write("\r\n");
+
+			for (uint32_t j = 0; j < page_num; j++) {
+				// 1GB 영역 내부라면
+				if (pivot_addr < PMM_STEP_LIMIT) {
+					pmm_free((void*)pivot_addr, 0);
+					pmm.total_pages++;
+
+					pivot_addr += PAGE_SIZE;
+				} else {
+					last_region = i;
+					i = usable_region_count;	// for문 탈출 조건
+					break;
+				}
+			}
+		} // page 배열이 들어가는 usable_region
+		else {
+			serial_write(": page array region\r\n");
+			for (uint32_t j = 0; j < page_num; j++) {
+				// 1GB 영역 내부라면
+				if (pivot_addr < PMM_STEP_LIMIT) {
+					// 만약 현재 주소가 page 배열이 끝나는 주소보다 작다면
+					if (pivot_addr < array_end_addr) {
+						pivot_addr += PAGE_SIZE;
+					} // 만약 현재 주소가 page 배열의 마지막 인덱스 이후라면
+					else {
+						pmm_free((void*)pivot_addr, 0);
+						pmm.total_pages++;
+
+						pivot_addr += PAGE_SIZE;
+					}
+				} else {
+					last_region = i;
+					i = usable_region_count;
+					break;
+				}
 			}
 		}
-
-		PMM_DEBUG_MSG("Sum of Total Page: ");
-		PMM_DEBUG_DEC(pmm.total_pages);
-		PMM_DEBUG_NEWLINE();
 	}
-
-	PMM_DEBUG_MSG("[pmm_init_step1] done");
-	PMM_DEBUG_NEWLINE();
-	PMM_DEBUG_NEWLINE();
 }
 
 void pmm_init_step2() {
-	PMM_DEBUG_NEWLINE();
-	PMM_DEBUG_MSG("[pmm_init_step2] start");
-	PMM_DEBUG_NEWLINE();
-	PMM_DEBUG_MSG("Region #");
-	PMM_DEBUG_DEC(last_region);
-	PMM_DEBUG_NEWLINE();
+	uint32_t page_num = (usable_regions[last_region].end - usable_regions[last_region].start) >> 12;
+	uint64_t pivot_addr = usable_regions[last_region].start;
 
-	uint64_t page_num = (usable_regions[last_region].end - usable_regions[last_region].start) >> 12;
-		
-	uint64_t last_pivot_addr = usable_regions[last_region].start;
+	// 현재 주소가 page 배열 내부라면 벗어날 때까지 현재 주소를 다음 페이지 주소로 변경
+	// array_end_addr은 page.h에 선언된 전역 변수로 page 배열의 마지막 요소와 가장 가까운 다음 페이지 주소임 (4KB aligned)
+	while (pivot_addr < array_end_addr) pivot_addr += PAGE_SIZE;
 
-	for (uint32_t i = 0; i < page_num; i++) {
-		if (last_pivot_addr < PMM_STEP_LIMIT) {
-			last_pivot_addr += PAGE_SIZE;
-		} else {
-			pmm_free((void*)last_pivot_addr, 0);
-			pmm.total_pages++;
+	// ---- DEBUG ----
+	serial_write("Region #");
+	serial_write_dec(last_region);
+	serial_write("\r\n");
+	// ---------------
 
-			last_pivot_addr += PAGE_SIZE;
-		}
+	// 1GB ~ 하던 usable_region 마무리
+	for (; pivot_addr < usable_regions[last_region].end; pivot_addr += PAGE_SIZE) {
+		// 이미 진행했던 1GB 영역 내부라면
+		if (pivot_addr < PMM_STEP_LIMIT) continue;	// 패스
+
+		pmm_free((void*)pivot_addr, 0);
+		pmm.total_pages++;
 	}
 
-	PMM_DEBUG_MSG("Sum of Total Page: ");
-	PMM_DEBUG_DEC(pmm.total_pages);
-	PMM_DEBUG_NEWLINE();
-
+	// 나머지 usable_region
 	for (uint32_t i = last_region + 1; i < usable_region_count; i++) {
-		PMM_DEBUG_MSG("Region #");
-		PMM_DEBUG_DEC(i);
-		PMM_DEBUG_NEWLINE();
+		// ---- DEBUG ----
+		serial_write("Region #");
+		serial_write_dec(i);
+		serial_write("\r\n");
+		// ---------------
 
 		page_num = (usable_regions[i].end - usable_regions[i].start) >> 12;
-		
-		uint64_t pivot_addr = usable_regions[i].start;
+		pivot_addr = usable_regions[i].start;
 
 		for (uint32_t j = 0; j < page_num; j++) {
 			pmm_free((void*)pivot_addr, 0);
@@ -185,12 +187,5 @@ void pmm_init_step2() {
 
 			pivot_addr += PAGE_SIZE;
 		}
-
-		PMM_DEBUG_MSG("Sum of Total Page: ");
-		PMM_DEBUG_DEC(pmm.total_pages);
-		PMM_DEBUG_NEWLINE();
 	}
-
-	PMM_DEBUG_MSG("[pmm_init_step2] done");
-	PMM_DEBUG_NEWLINE();
 }

@@ -1,8 +1,8 @@
 #ifndef PMM_H
 #define PMM_H
 
-#include <stdint.h>
 #include <kernel/kernel_info.h>
+#include <stdint.h>
 
 // free block을 연결 리스트로 관리하기 위한 노드
 typedef struct block {

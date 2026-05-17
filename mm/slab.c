@@ -5,6 +5,7 @@
 #include <mm/slab.h>
 #include <mm/vmm.h>
 #include <stddef.h>
+#include <stdint.h>
 
 kmem_cache_t kmem_cache_list[KMEM_CACHE_COUNT];	// KMEM_CACHE_COUNT는 9 (mm/slab.h)
 

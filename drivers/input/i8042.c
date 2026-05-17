@@ -1,6 +1,6 @@
+#include <asm/cpu.h>
 #include <drivers/i8042.h>
 #include <drivers/serial.h>
-#include <asm/cpu.h>
 
 #define I8042_DATA_PORT		0x60
 #define I8042_STATUS_REG	0x64

@@ -1,8 +1,8 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include <stdint.h>
 #include <kernel/kernel_info.h>
+#include <stdint.h>
 
 extern uint64_t* pml4_root;
 

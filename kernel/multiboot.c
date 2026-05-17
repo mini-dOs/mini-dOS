@@ -1,8 +1,8 @@
-#include <kernel/kernel_base.h>
-#include <kernel/early_alloc.h>
-#include <kernel/multiboot2.h>
 #include <drivers/serial.h>
+#include <kernel/early_alloc.h>
+#include <kernel/kernel_base.h>
 #include <kernel/multiboot.h>
+#include <kernel/multiboot2.h>
 #include <stdint.h>
 
 extern char _kernel_end[];

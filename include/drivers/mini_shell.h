@@ -1,6 +1,8 @@
 #ifndef MINI_SHELL_H
 #define MINI_SHELL_H
 
+#include <stdint.h>
+
 typedef struct system_cursor {
 	uint32_t x;
 	uint32_t y;

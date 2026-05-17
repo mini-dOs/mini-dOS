@@ -1,9 +1,9 @@
 #include <asm/cpu.h>
-#include <kernel/exception.h>
 #include <asm/interrupt.h>
+#include <drivers/serial.h>
+#include <kernel/exception.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
-#include <drivers/serial.h>
 #include <string.h>
 
 static void divide_error(interrupt_frame_t *f) {

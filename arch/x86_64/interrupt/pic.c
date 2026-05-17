@@ -1,6 +1,6 @@
+#include <asm/cpu.h>
 #include <asm/pic.h>
 #include <stdint.h>
-#include <asm/cpu.h>
 
 #define PIC1 0x20
 #define PIC2 0xA0

@@ -1,8 +1,8 @@
 #include <drivers/font.h>
 #include <drivers/framebuffer.h>
+#include <drivers/serial.h>
 #include <kernel/kernel_base.h>
 #include <mm/paging.h>
-#include <drivers/serial.h>
 #include <stdint.h>
 
 static uint8_t*	fb_base;
