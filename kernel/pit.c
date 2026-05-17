@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include <asm/cpu.h>
+#include <stdint.h>
 
 #define PIT_BASE_FREQ 1193182
 

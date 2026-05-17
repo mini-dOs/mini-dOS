@@ -1,8 +1,8 @@
 #ifndef KERNEL_BASE_H
 #define KERNEL_BASE_H
 
-#include <stdint.h>
 #include <kernel/kernel_info.h>
+#include <stdint.h>
 
 extern char KERNEL_VMA[];
 extern char _kernel_end[];

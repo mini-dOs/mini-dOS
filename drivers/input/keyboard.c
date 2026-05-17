@@ -1,6 +1,6 @@
 #include <asm/interrupt.h>
-#include <drivers/serial.h>
 #include <drivers/i8042.h>
+#include <drivers/serial.h>
 
 #define ESC		27
 #define CTRL		0

@@ -1,8 +1,8 @@
 #include <asm/idt.h>
 #include <asm/interrupt.h>
-#include <stdint.h>
-#include <drivers/serial.h>
 #include <asm/pic.h>
+#include <drivers/serial.h>
+#include <stdint.h>
 
 static interrupt_handler_t interrupt_handlers[IDT_SIZE];
 

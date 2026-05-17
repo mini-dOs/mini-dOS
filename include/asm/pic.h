@@ -2,6 +2,7 @@
 #define PIC_H
 
 #include <asm/cpu.h>
+#include <stdint.h>
 
 void pic_remap(void);
 void pic_send_eoi(unsigned char irq);

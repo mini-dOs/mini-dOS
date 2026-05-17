@@ -1,12 +1,12 @@
-#include <kernel/kernel_info.h>
 #include <asm/cpu.h>
 #include <drivers/serial.h>
 #include <kernel/early_alloc.h>
 #include <kernel/kernel_base.h>
+#include <kernel/kernel_info.h>
+#include <kernel/multiboot.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <kernel/multiboot.h>
 #include <stdint.h>
 #include <string.h>
 

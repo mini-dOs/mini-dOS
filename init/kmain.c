@@ -1,18 +1,18 @@
-#include <kernel/config.h>
 #include <asm/cpu.h>
-#include <kernel/early_alloc.h>
-#include <drivers/framebuffer.h>
 #include <asm/gdt.h>
 #include <asm/idt.h>
-#include <kernel/interrupt_init.h>
+#include <drivers/framebuffer.h>
 #include <drivers/mini_shell.h>
+#include <drivers/serial.h>
+#include <kernel/config.h>
+#include <kernel/early_alloc.h>
+#include <kernel/interrupt_init.h>
+#include <kernel/multiboot.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
-#include <mm/vmm.h>
 #include <mm/slab.h>
 #include <mm/vmalloc.h>
-#include <kernel/multiboot.h>
-#include <drivers/serial.h>
+#include <mm/vmm.h>
 #include <stdint.h>
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
@@ -31,18 +31,35 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     early_alloc_init();
     
     multiboot_parse((void *)(uint64_t)multiboot_info);
-    serial_write("Memory parsing done\r\n");
+    serial_write("Memory parsing done\r\n\r\n");
+
+    serial_write("[PAGE] init start\r\n");
+    page_init();
+    serial_write("[PAGE] init done\r\n\r\n");
     
+    serial_write("[PMM] init_step1 start\r\n");
     pmm_init_step1();
+    serial_write("[PMM] init_step1 done\r\n\r\n");
 
+    serial_write("[VMM] init start\r\n");
     vmm_init();
-    serial_write("VMM initialized\r\n");
+    serial_write("[VMM] init done\r\n\r\n");
 
+    serial_write("[PMM] init_step2 start\r\n");
     pmm_init_step2();
+    serial_write("[PMM] init_step2 done\r\n\r\n");
 
+    serial_write("[PAGE] page_array_init start\r\n");
+    page_array_init();
+    serial_write("[PAGE] page_array_init done\r\n\r\n");
+
+    serial_write("[SLAB] init start\r\n");
     kmem_cache_init();
+    serial_write("[SLAB] init done\r\n\r\n");
+
+    serial_write("[VMALLOC] init start\r\n");
     vmalloc_init();
-    serial_write("VMALLOC initialized\r\n");
+    serial_write("[VMALLOC] init done\r\n\r\n");
 
     // ── vmalloc smoke test ─────────────────────────────
     serial_write("\r\n[vmalloc test] start\r\n");

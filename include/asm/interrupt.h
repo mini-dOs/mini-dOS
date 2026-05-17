@@ -1,8 +1,8 @@
 #ifndef INTERRUPT_H
 #define INTERRUPT_H
 
-#include <stdint.h>
 #include <drivers/serial.h>
+#include <stdint.h>
 
 typedef struct interrupt_frame
 {

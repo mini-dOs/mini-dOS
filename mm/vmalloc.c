@@ -1,12 +1,13 @@
-#include <mm/vmm.h>
-#include <mm/slab.h>
-#include <mm/paging.h>
-#include <mm/vmalloc.h>
-#include <stdbool.h>
-#include <kernel/kernel_info.h>
-#include <drivers/serial.h>
 #include <asm/cpu.h>
+#include <drivers/serial.h>
+#include <kernel/kernel_info.h>
+#include <mm/paging.h>
+#include <mm/slab.h>
+#include <mm/vmalloc.h>
+#include <mm/vmm.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct vm_area {
     uint64_t        addr;

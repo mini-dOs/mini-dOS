@@ -1,8 +1,8 @@
 #ifndef EARLY_ALLOC_H
 #define EARLY_ALLOC_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define EARLY_ALLOC_SIZE 0x100000
 

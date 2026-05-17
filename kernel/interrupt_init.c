@@ -1,8 +1,8 @@
-#include <asm/pic.h>
 #include <asm/idt.h>
-#include <kernel/exception.h>
 #include <asm/irq.h>
+#include <asm/pic.h>
 #include <drivers/i8042.h>
+#include <kernel/exception.h>
 
 void interrupt_subsystem_init(void)
 {

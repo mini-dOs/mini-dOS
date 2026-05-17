@@ -1,8 +1,8 @@
 #ifndef GDT_H
 #define GDT_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // Segment Descriptor Structure
 struct GDT_ENTRY {

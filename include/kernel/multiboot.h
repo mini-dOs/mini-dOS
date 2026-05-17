@@ -1,9 +1,9 @@
 #ifndef MULTIBOOT_H
 #define MULTIBOOT_H
 
-#include <stdint.h>
-#include <kernel/multiboot2.h>
 #include <kernel/kernel_info.h>
+#include <kernel/multiboot2.h>
+#include <stdint.h>
 
 typedef struct {
 	uint64_t start;
