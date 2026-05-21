@@ -125,6 +125,17 @@ void vfree(void *ptr) {
     }
 }
 
+uint64_t vmalloc_usable_size(void *ptr) {
+    if (ptr == NULL)
+        return 0;
+
+    for (vm_area_t *cur = head; cur != NULL; cur = cur->next) {
+        if (cur->addr == (uint64_t)ptr)
+            return cur->is_free ? 0 : cur->size;
+    }
+    return 0;
+}
+
 void vmalloc_dump(void) {
     serial_write("[vmalloc dump]\n");
     for (vm_area_t *p = head; p; p = p->next) {
