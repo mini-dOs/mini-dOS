@@ -46,6 +46,45 @@ static ring_buffer_t rb;
 static uint8_t shift_pressed	= 0;
 static uint8_t caps_lock	= 0;
 
+// === DOOM용 raw 키 이벤트 큐 ===
+// shell이 쓰는 위 ASCII 큐(rb)와 별개.
+// 누름/뗌 양쪽 + 확장키(0xE0)까지 모두 담아 DOOM의 DG_GetKey가 폴링한다.
+typedef struct key_event {
+	uint8_t scancode;	// release 비트(0x80) 뗀 7-bit set 1 스캔코드
+	uint8_t pressed;	// 1 = 눌림(down), 0 = 뗌(up)
+	uint8_t extended;	// 1 = 직전에 0xE0 prefix가 온 키 (방향키/RCtrl 등)
+} key_event_t;
+
+// 2의 거듭제곱(& 마스크용). 폴링 지연 대비 넉넉한 버퍼 깊이 — 자판 수와 무관
+#define KEY_EVENT_QUEUE_SIZE 256
+static key_event_t ev_buf[KEY_EVENT_QUEUE_SIZE];
+static uint16_t ev_head = 0;
+static uint16_t ev_tail = 0;
+
+// 다음 인터럽트의 스캔코드가 확장(0xE0)임을 표시
+static uint8_t extended_pending = 0;
+
+static void key_event_enqueue(uint8_t scancode, uint8_t pressed, uint8_t extended) {
+	uint16_t next = (ev_tail + 1) & (KEY_EVENT_QUEUE_SIZE - 1);
+	if (next == ev_head) return;	// 가득 참 → 버림
+
+	ev_buf[ev_tail].scancode = scancode;
+	ev_buf[ev_tail].pressed  = pressed;
+	ev_buf[ev_tail].extended = extended;
+	ev_tail = next;
+}
+
+int keyboard_poll_event(uint8_t *scancode, uint8_t *pressed, uint8_t *extended) {
+	if (ev_head == ev_tail) return 0;	// 빈 큐
+
+	*scancode = ev_buf[ev_head].scancode;
+	*pressed  = ev_buf[ev_head].pressed;
+	*extended = ev_buf[ev_head].extended;
+	ev_head = (ev_head + 1) & (KEY_EVENT_QUEUE_SIZE - 1);
+	return 1;
+}
+// 키보드 회사에서 어떤 키를 누르면 어떤 신호를 보내겠다는 규약이 정해져 있음
+// Keyboard Scan Codes: Set 1
 static const char keyboard_map[] = {
 	0, ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
 	'\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
@@ -135,15 +174,36 @@ void keyboard_handler(interrupt_frame_t *f) {
 	// interrupt.h에서 선언한 인터럽트 핸들러 규격 때문에 무조건 넣어야 함
 	(void)f;	// 대신 아무것도 안 하도록 결과값이 없는 void형으로 형 변환
 
-	uint8_t scancode = inb(0x60);	// 0x60 포트에서 스캔코드 추출
+	uint8_t code = inb(0x60);	// 0x60 포트에서 스캔코드 추출
+
+	// 지금 입력된 키가 확장 키임을 알려주는 코드(0xE0) → 다음 바이트가 진짜 키라는 사실만 표시하고 끝
+	// 이렇게 하는 이유는 확장 키가 기존의 스캔 코드를 중복하여 사용하기 떄문
+	// 왼쪽 방향키 = E0 4B
+	// 오른쪽 숫자 키패드 4 = 4B
+	if (code == 0xE0) {
+		extended_pending = 1;
+		return;
+	}
+
+	uint8_t pressed  = !(code & 0x80);	// (code & 0x80)이 1이면 떼진 것(up)
+	uint8_t scancode = code & 0x7F;		// release 비트를 제거한 순수 7-bit 데이터 코드
+	uint8_t extended = extended_pending;	// 위에서 E0가 인식됐으면 확장키라는 상태를 저장
+	extended_pending = 0;
+
+	// raw 이벤트 큐 — 모든 키, 누름/뗌 양쪽 다 적재
+	key_event_enqueue(scancode, pressed, extended);
+
+	// 일반 ASCII 경로 — 확장키(방향키 등)는 제외하고 shell의 기존 동작 유지를 위한 경로. 확장키는 DOOM에서 사용(방향키 등)
+	if (extended)
+		return;
 
 	// 키가 떼졌을 때
-	if (scancode & 0x80) {
+	if (!pressed) {
 		// 그 키가 L_SHIFT나 R_SHIFT일 때
-		if (scancode == (0x2A | 0x80) || scancode == (0x36 | 0x80))
+		if (scancode == 0x2A || scancode == 0x36)
 			shift_pressed = 0;
 		return;
-	}	
+	}
 
 	// 눌린 키가 L_SHIFT나 R_SHIFT일 때
 	if (scancode == 0x2A || scancode == 0x36) {
@@ -167,8 +227,4 @@ void keyboard_handler(interrupt_frame_t *f) {
 		char buf[2] = {c, 0};
 		serial_write(buf);
 	}
-
-	// pic_send_eoi() 함수가 자동으로 처리해줌
-	// 그래서 outb(0x20, 0x20)를 따로 해줄 필요가 없음
-	// outb(0x20, 0x20);
 }
