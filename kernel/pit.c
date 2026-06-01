@@ -6,6 +6,24 @@
 #define PIT_COMMAND 0x43
 #define PIT_CHANNEL0 0x40
 
+/*
+ * DOOM 포팅을 위해 변수와 함수 추가
+ * 더 이상 타이머 인터럽트로 인해 터미널에
+ * '.'을 출력하지 않고 pit_ticks를 증가시킴
+ */
+static volatile uint64_t pit_ticks = 0;
+
+void pit_tick(void)
+{
+    pit_ticks++;
+}
+
+uint64_t pit_get_ticks(void)
+{
+    return pit_ticks;
+}
+// 여기까지
+
 static uint16_t pit_compute_divisor(uint32_t freq)
 {
     if (freq == 0)
