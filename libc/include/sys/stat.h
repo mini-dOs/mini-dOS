@@ -30,4 +30,7 @@ struct stat {
 #define S_IWOTH 0002
 #define S_IXOTH 0001
 
+extern int mkdir(const char *path, mode_t mode);
+extern int stat(const char *path, struct stat *buf);
+
 #endif
