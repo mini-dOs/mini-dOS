@@ -2,7 +2,9 @@
 #include <drivers/font.h>
 #include <drivers/framebuffer.h>
 #include <drivers/mini_shell.h>
+#include <doomgeneric_minidos.h>
 #include <stdint.h>
+#include <string.h>
 
 uint32_t system_font_color;
 uint32_t system_bg_color;
@@ -29,6 +31,10 @@ void shell_wait() {
 
 	// 사용자 입력
 	console_readline();
+
+	// 명령어[1]: doom 실행
+	if (strcmp(console_get_line(), "doom") == 0)
+		doom_run();
 }
 
 void shell_init() {
