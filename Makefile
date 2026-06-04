@@ -13,7 +13,8 @@ ISODIR := isodir
 # source layout
 # ---------------------------------
 # Kernel side (everything except libc impls and doom)
-KSRC_DIRS := arch drivers init kernel mm
+# glue = doomgeneric <-> 커널 플랫폼 훅 (커널 헤더 + doomgeneric.h 둘 다 본다)
+KSRC_DIRS := arch drivers init kernel mm glue
 # libc impl
 LSRC_DIR  := libc/src
 # DOOM
@@ -101,6 +102,11 @@ $(BUILD)/kernel.elf: $(OBJS)
 $(BUILD)/doom/%.o: doom/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(DOOM_INC) $(DOOM_CFLAGS) -c $< -o $@
+
+# glue (doomgeneric 플랫폼 훅): 커널 헤더 + doomgeneric.h 둘 다 필요해 -I doom 추가
+$(BUILD)/glue/%.o: glue/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(KERNEL_INC) -I doom -c $< -o $@
 
 # libc impls
 $(BUILD)/libc/%.o: libc/%.c

@@ -13,6 +13,7 @@ typedef struct cursor {
 extern cursor_t cursor;
 
 void console_readline();
+const char* console_get_line(void);
 void console_putchar(char c, uint32_t font_color, uint32_t bg_color, uint32_t scale);
 void console_puts(uint32_t x, uint32_t y, const char* str, uint32_t font_color, uint32_t bg_color, uint32_t scale);
 void console_setter(uint32_t font_color, uint32_t bg_color, uint32_t scale);

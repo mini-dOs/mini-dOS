@@ -60,6 +60,12 @@ void console_readline() {
 	} while (1);
 }
 
+// 직전 console_readline()이 받은 입력 줄(NULL 종료)을 돌려줌.
+// shell이 명령어를 구분하려면 사용자가 친 줄을 읽어야 함.
+const char* console_get_line(void) {
+	return g_line_buf;
+}
+
 void console_putchar(char c, uint32_t font_color, uint32_t bg_color, uint32_t scale) {
 	fb_write_char(cursor.x, cursor.y, c, font_color, bg_color, scale);
 }
