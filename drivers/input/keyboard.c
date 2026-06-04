@@ -48,9 +48,9 @@ static uint8_t caps_lock	= 0;
 
 // === DOOM용 raw 키 이벤트 큐 ===
 // shell이 쓰는 위 ASCII 큐(rb)와 별개.
-// 누름/뗌 양쪽 + 확장키(0xE0)까지 모두 담아 DOOM의 DG_GetKey가 폴링한다.
+// 누름/뗌 양쪽 + 확장키(0xE0)까지 모두 저장
 typedef struct key_event {
-	uint8_t scancode;	// release 비트(0x80) 뗀 7-bit set 1 스캔코드
+	uint8_t scancode;	// 최상위 비트인 release 비트를 떼고 순수한 7-bit 크기의 스캔코드
 	uint8_t pressed;	// 1 = 눌림(down), 0 = 뗌(up)
 	uint8_t extended;	// 1 = 직전에 0xE0 prefix가 온 키 (방향키/RCtrl 등)
 } key_event_t;
