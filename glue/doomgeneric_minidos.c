@@ -44,35 +44,58 @@ void DG_Init(void) {
 	fb_clear(0x00000000);
 }
 
+// ===== AI-GENERATED (Claude) BEGIN =====
+// DOOM 640x400 프레임을 화면에 들어가는 최대 정수배로 업스케일해 중앙에 그린다.
+// (기존엔 1:1 복사라 큰 GOP 해상도에서 화면 가운데에만 작게 떠 보였음.)
+// 최근접(nearest) 확대 — 각 src 픽셀을 s×s 블록으로 복제. 예) 1280x800 → s=2.
 void DG_DrawFrame(void) {
 	const uint32_t fbw = fb_get_width();
 	const uint32_t fbh = fb_get_height();
 
-	// HW 프레임버퍼가 DOOM 해상도보다 크면 가운데 정렬, 작으면 클리핑
-	const uint32_t cw = fbw < DOOMGENERIC_RESX ? fbw : DOOMGENERIC_RESX;
-	const uint32_t ch = fbh < DOOMGENERIC_RESY ? fbh : DOOMGENERIC_RESY;
-	const uint32_t ox = (fbw - cw) / 2;
-	const uint32_t oy = (fbh - ch) / 2;
+	// 화면에 들어가는 최대 정수 배율 (화면이 DOOM보다 작으면 1 = 클리핑)
+	uint32_t sx = fbw / DOOMGENERIC_RESX;
+	uint32_t sy = fbh / DOOMGENERIC_RESY;
+	uint32_t s  = sx < sy ? sx : sy;
+	if (s == 0) s = 1;
+
+	const uint32_t dw = DOOMGENERIC_RESX * s;	// 그려질 폭/높이
+	const uint32_t dh = DOOMGENERIC_RESY * s;
+	const uint32_t ox = fbw > dw ? (fbw - dw) / 2 : 0;	// 중앙 정렬
+	const uint32_t oy = fbh > dh ? (fbh - dh) / 2 : 0;
+	// 화면 밖으로 안 나가도록 그릴 src 픽셀 수 클리핑
+	const uint32_t cw = (fbw - ox) / s < DOOMGENERIC_RESX ? (fbw - ox) / s : DOOMGENERIC_RESX;
+	const uint32_t ch = (fbh - oy) / s < DOOMGENERIC_RESY ? (fbh - oy) / s : DOOMGENERIC_RESY;
 
 	if (fb_get_bpp() == 32) {
-		// 빠른 경로: 행 단위 32비트 직접 복사
-		uint8_t *base    = fb_get_base();
-		uint32_t pitch   = fb_get_pitch();
+		// 빠른 경로: 32비트 직접 복사 (행/픽셀을 s배 복제)
+		uint8_t *base  = fb_get_base();
+		uint32_t pitch = fb_get_pitch();
 		for (uint32_t y = 0; y < ch; y++) {
-			uint32_t *dst       = (uint32_t *)(base + (uint64_t)(oy + y) * pitch + (uint64_t)ox * 4);
-			const pixel_t *src  = DG_ScreenBuffer + (uint64_t)y * DOOMGENERIC_RESX;
-			for (uint32_t x = 0; x < cw; x++)
-				dst[x] = src[x];
+			const pixel_t *src = DG_ScreenBuffer + (uint64_t)y * DOOMGENERIC_RESX;
+			for (uint32_t ry = 0; ry < s; ry++) {
+				uint32_t *dst = (uint32_t *)(base + (uint64_t)(oy + y * s + ry) * pitch + (uint64_t)ox * 4);
+				for (uint32_t x = 0; x < cw; x++) {
+					uint32_t c = (uint32_t)src[x];
+					uint32_t *d = dst + (uint64_t)x * s;
+					for (uint32_t rx = 0; rx < s; rx++)
+						d[rx] = c;
+				}
+			}
 		}
 	} else {
 		// 일반 경로: bpp 변환은 fb_paint_pixel에 위임
 		for (uint32_t y = 0; y < ch; y++) {
 			const pixel_t *src = DG_ScreenBuffer + (uint64_t)y * DOOMGENERIC_RESX;
-			for (uint32_t x = 0; x < cw; x++)
-				fb_paint_pixel(ox + x, oy + y, (uint32_t)src[x]);
+			for (uint32_t x = 0; x < cw; x++) {
+				uint32_t c = (uint32_t)src[x];
+				for (uint32_t ry = 0; ry < s; ry++)
+					for (uint32_t rx = 0; rx < s; rx++)
+						fb_paint_pixel(ox + x * s + rx, oy + y * s + ry, c);
+			}
 		}
 	}
 }
+// ===== AI-GENERATED (Claude) END ======
 
 void DG_SetWindowTitle(const char *title) {
 	if (!title) return;
@@ -161,10 +184,18 @@ int DG_GetKey(int *pressed, unsigned char *key) {
 
 // ---------------------------------------------------------------------------
 // 진입점
-//   doomgeneric_Create() -> D_DoomMain() 내부 게임 루프로 진입하며 보통 복귀하지
-//   않는다. (실제 구동에는 IWAD가 libc 모듈로 등록돼 있어야 한다 — 후속 작업.)
+//   doomgeneric_Create()는 DOOM을 초기화하고 첫 프레임 1틱만 돌린 뒤 *복귀*한다
+//   (doomgeneric 구조: D_DoomLoop이 doomgeneric_Tick을 1회만 호출). 따라서 호스트가
+//   doomgeneric_Tick()을 매 프레임 반복 호출해야 게임이 실제로 진행된다.
+//   이 루프가 없으면 첫 프레임만 그리고 셸로 복귀해 버린다.
+//   IWAD(doom1.wad)는 부팅 시 GRUB 모듈로 적재되어 libc 모듈 레지스트리에 등록돼
+//   있어야 한다 (kmain의 libc_register_module). -iwad로 그 이름을 지정한다.
 // ---------------------------------------------------------------------------
 void doom_run(void) {
-	char *argv[] = { "doom" };
-	doomgeneric_Create(1, argv);
+	char *argv[] = { "doom", "-iwad", "doom1.wad" };
+	doomgeneric_Create(3, argv);
+
+	// 게임 루프: 호스트가 프레임마다 틱을 돌린다 (복귀하지 않음)
+	for (;;)
+		doomgeneric_Tick();
 }

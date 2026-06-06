@@ -7,6 +7,7 @@
 #include <kernel/config.h>
 #include <kernel/early_alloc.h>
 #include <kernel/interrupt_init.h>
+#include <kernel/kernel_base.h>	// phys_to_virt
 #include <kernel/multiboot.h>
 #include <mm/paging.h>
 #include <mm/pmm.h>
@@ -14,6 +15,7 @@
 #include <mm/vmalloc.h>
 #include <mm/vmm.h>
 #include <stdint.h>
+#include <stdio.h>	// libc_register_module
 
 /* Called from boot.s with Multiboot2 magic in RDI, info physical addr in RSI */
 void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
@@ -118,6 +120,20 @@ void kmain(uint32_t multiboot_magic, uint32_t multiboot_info) {
     // volatile uint64_t *bad = (volatile uint64_t *)0x40000000ULL; // 1GiB
     // *bad = 0xDEADBEEFCAFEBABEULL; // 의도적 #PF (err_code=0x2)
     // serial_write("[TEST] unreachable\r\n");
+
+    // ===== AI-GENERATED (Claude) BEGIN =====
+    // GRUB 부트 모듈(예: doom1.wad)을 libc 모듈 레지스트리에 등록한다.
+    // base는 vmm_init이 깔아둔 direct-map VA(phys_to_virt). 이후 fopen("doom1.wad")가
+    // 이 메모리를 읽는다. boot_modules 영역은 PMM에서 carve-out돼 손상되지 않는다.
+    for (uint32_t i = 0; i < boot_module_count; i++) {
+        libc_register_module(boot_modules[i].name,
+                             phys_to_virt(boot_modules[i].start),
+                             (size_t)(boot_modules[i].end - boot_modules[i].start));
+        serial_write("[MODULE] registered '");
+        serial_write(boot_modules[i].name);
+        serial_write("'\r\n");
+    }
+    // ===== AI-GENERATED (Claude) END ======
 
     shell_init();
 
