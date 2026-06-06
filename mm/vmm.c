@@ -53,6 +53,27 @@ void vmm_init(void)
         }
     }
 
+    // ===== AI-GENERATED (Claude) BEGIN =====
+    // 부트 모듈(WAD 등)은 usable_regions에서 carve-out 됐으므로 위 direct-map
+    // 루프가 덮지 않는다. 모듈 데이터를 읽으려면 phys_to_virt VA로 따로 매핑한다.
+    // 2MB 단위로 정렬해 매핑하며, 이웃 region의 round-up이 이미 덮은 경우
+    // map_page_2mb가 MAP_EEXIST를 돌려주는데 이는 정상이다.
+    for (uint32_t i = 0; i < boot_module_count; i++) {
+        uint64_t mod_start = boot_modules[i].start & ~(PAGE_2MB - 1);
+        uint64_t mod_end   = (boot_modules[i].end + PAGE_2MB - 1) & ~(PAGE_2MB - 1);
+
+        for (uint64_t phys_addr = mod_start; phys_addr < mod_end; phys_addr += PAGE_2MB) {
+            uint64_t va = (uint64_t)phys_to_virt(phys_addr);
+            int rc = map_page_2mb(pml4_root, va, phys_addr, PAGE_RW | PAGE_PS);
+            if (rc == MAP_ENOMEM) {
+                serial_write("[vmm.c] vmm_init OOM mapping boot module\n");
+                for (;;)
+                    hlt();
+            }
+        }
+    }
+    // ===== AI-GENERATED (Claude) END ======
+
     // CR3 switch (must use physical address)
     asm volatile("mov %0, %%cr3" :: "r"(virt_to_phys(pml4_root)) : "memory");
 }

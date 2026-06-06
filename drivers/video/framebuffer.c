@@ -165,6 +165,17 @@ void fb_init() {
 	fb_height	= fb_info.framebuffer_height;
 	fb_bpp		= fb_info.framebuffer_bpp;
 
+	// 실제 적용된 해상도 확인용 (grub gfxmode → GOP 결과) -- AI-GENERATED
+	serial_write("[FB] resolution = ");
+	serial_write_dec(fb_width);
+	serial_write("x");
+	serial_write_dec(fb_height);
+	serial_write("x");
+	serial_write_dec(fb_bpp);
+	serial_write(" pitch=");
+	serial_write_dec(fb_pitch);
+	serial_write("\r\n");
+
 	// 0x0000'0000'C000'0000이 fb_base에 저장된 프레임 버퍼의 주소인데
 	// 아직 usable_regions에 없음
 	// 그래서 kmain에서 계속 Page Fault -> Page Alloc

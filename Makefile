@@ -155,7 +155,8 @@ run:
 		-m 8G \
 		-cdrom $(BUILD)/myos.iso \
 		-bios /usr/share/OVMF/OVMF_CODE.fd \
-		-vga std \
+		-vga none \
+		-device virtio-vga,xres=1280,yres=800 \
 		-serial stdio \
 		-no-reboot \
 		-no-shutdown
