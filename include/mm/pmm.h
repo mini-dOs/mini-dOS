@@ -20,4 +20,7 @@ void pmm_free(void *addr, uint32_t order);
 void pmm_init_step1();
 void pmm_init_step2();
 
+// 버디 할당기 통계(전체/남은 페이지 수)를 돌려준다. NULL 인자는 무시.
+void pmm_get_stats(uint64_t *total_pages, uint64_t *free_pages);
+
 #endif

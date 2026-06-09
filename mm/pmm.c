@@ -189,3 +189,8 @@ void pmm_init_step2() {
 		}
 	}
 }
+
+void pmm_get_stats(uint64_t *total_pages, uint64_t *free_pages) {
+	if (total_pages) *total_pages = pmm.total_pages;
+	if (free_pages)  *free_pages  = pmm.free_pages;
+}

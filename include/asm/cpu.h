@@ -30,6 +30,11 @@ static inline uint8_t inb(uint16_t port) {
     return ret;
 }
 
+/* Write a word (16-bit) to the specified I/O port. */
+static inline void outw(uint16_t port, uint16_t value) {
+    __asm__ volatile ("outw %0, %1" : : "a"(value), "Nd"(port));
+}
+
 /* Introduce a short delay by writing to port 0x80 (POST diagnostic port). */
 static inline void io_wait(void) {
     __asm__ volatile ("outb %%al, $0x80" : : "a"(0));
