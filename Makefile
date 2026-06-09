@@ -157,9 +157,7 @@ run:
 		-bios /usr/share/OVMF/OVMF_CODE.fd \
 		-vga none \
 		-device virtio-vga,xres=1280,yres=800 \
-		-serial stdio \
-		-no-reboot \
-		-no-shutdown
+		-serial stdio
 
 run-debug:
 	$(MAKE) clean
