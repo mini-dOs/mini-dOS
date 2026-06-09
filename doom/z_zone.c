@@ -17,6 +17,8 @@
 //
 
 
+#include <stdlib.h>
+
 #include "z_zone.h"
 #include "i_system.h"
 #include "doomtype.h"
@@ -118,6 +120,21 @@ void Z_Init (void)
     
     block->size = mainzone->size - sizeof(memzone_t);
 }
+
+
+// ===== AI-GENERATED (Claude) BEGIN =====
+// mini-dOS 포팅: zone 베이스(mainzone)는 I_ZoneBase가 malloc으로 잡은 단일 블록이라
+// 통째로 free하면 zone 안의 모든 할당이 한 번에 사라진다. DOOM 종료 후 셸로 복귀하고
+// "doom"을 다시 실행할 때, 다음 Z_Init이 새 zone을 잡기 전에 헌 zone을 해제해 누수를 막는다.
+void Z_Shutdown (void)
+{
+    if (mainzone != NULL)
+    {
+        free (mainzone);
+        mainzone = NULL;
+    }
+}
+// ===== AI-GENERATED (Claude) END ======
 
 
 //

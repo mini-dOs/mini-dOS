@@ -569,6 +569,26 @@ void W_GenerateHashTable(void)
     // All done!
 }
 
+// ===== AI-GENERATED (Claude) BEGIN =====
+// mini-dOS 포팅: DOOM 재실행을 위해 WAD 디렉터리 상태를 비운다.
+//   - lumpinfo : realloc으로 잡힌 일반 힙 → free 후 NULL.
+//   - lumphash : 이전 zone(Z_Malloc)에 있던 해시테이블 → zone 통째 해제와 함께
+//                이미 사라졌으므로 free하지 않고 포인터만 NULL로 둔다. 이 NULL화를
+//                빠뜨리면 다음 실행의 W_AddFile이 stale 포인터를 Z_Free →
+//                "Z_Free: freed a pointer without ZONEID"로 죽는다.
+//   - numlumps : 0으로 되돌려 다음 W_AddFile이 처음부터 적재하게 한다.
+void W_Shutdown(void)
+{
+    if (lumpinfo != NULL)
+    {
+        free(lumpinfo);
+        lumpinfo = NULL;
+    }
+    numlumps = 0;
+    lumphash = NULL;
+}
+// ===== AI-GENERATED (Claude) END ======
+
 // Lump names that are unique to particular game types. This lets us check
 // the user is not trying to play with the wrong executable, eg.
 // chocolate-doom -iwad hexen.wad.

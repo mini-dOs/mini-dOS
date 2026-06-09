@@ -75,4 +75,7 @@ void    W_ReleaseLumpName(char *name);
 
 void W_CheckCorrectIWAD(GameMission_t mission);
 
+// mini-dOS 포팅: WAD 디렉터리 상태(lumpinfo/lumphash/numlumps)를 리셋해 재실행을 가능케 한다.
+void W_Shutdown(void);
+
 #endif

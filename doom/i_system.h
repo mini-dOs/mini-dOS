@@ -80,5 +80,9 @@ void I_PrintBanner(char *text);
 
 void I_PrintDivider(void);
 
+// mini-dOS 포팅: DOOM 종료 후 셸 복귀 및 "doom" 재실행을 위한 1회 teardown.
+// zone/lumpinfo/atexit 등 실행마다 누적되는 상태를 해제한다.
+void I_DoomShutdown(void);
+
 #endif
 
