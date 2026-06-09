@@ -35,3 +35,9 @@ tags
 # oh-my-claudecode
 .omc/
 
+# DOOM 상용 IWAD — 저작권상 커밋 금지 (Doom.wad/DOOM2.WAD 등은 로컬에서만 사용).
+# 셰어웨어 doom1.wad는 자유 재배포 가능하므로 추적 예외로 둔다.
+*.wad
+*.WAD
+!isodir/boot/doom1.wad
+

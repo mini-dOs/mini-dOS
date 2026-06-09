@@ -92,10 +92,11 @@ static void cmd_help(void) {
 	shell_println("");
 
 	shell_println_2col(" clear            - clear the screen",          " poweroff         - shut down (QEMU/Bochs only)");
-	shell_println_2col(" doom             - run DOOM",                   " reboot           - restart the machine");
-	shell_println_2col(" echo [arg ...]   - print arguments",           " uname [-a]       - print system name");
-	shell_println_2col(" free [-m|-g]     - show memory usage",         " uptime           - show time since boot");
-	shell_println_2col(" help             - show this list",            " whoami           - print current user");
+	shell_println_2col(" doom             - run Ultimate DOOM",         " reboot           - restart the machine");
+	shell_println_2col(" doom2            - run DOOM II",               " uname [-a]       - print system name");
+	shell_println_2col(" echo [arg ...]   - print arguments",           " uptime           - show time since boot");
+	shell_println_2col(" free [-m|-g]     - show memory usage",         " whoami           - print current user");
+	shell_println_2col(" help             - show this list",            "");
 }
 
 static void cmd_clear(void) {
@@ -191,7 +192,8 @@ void shell_wait() {
 	else if ((args = match_cmd(line, "free"))     != (void*)0) cmd_free(args);
 	else if ((args = match_cmd(line, "reboot"))   != (void*)0) cmd_reboot();
 	else if ((args = match_cmd(line, "poweroff")) != (void*)0) cmd_poweroff();
-	else if (strcmp(line, "doom") == 0) doom_run();
+	else if (strcmp(line, "doom") == 0)  { doom_run();  cmd_clear(); }
+	else if (strcmp(line, "doom2") == 0) { doom2_run(); cmd_clear(); }
 	else shell_println("command not found");
 }
 

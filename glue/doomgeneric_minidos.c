@@ -10,6 +10,7 @@
 // 이 파일은 *커널 쪽*(glue/)에 두어 커널 헤더와 doomgeneric.h를 동시에 본다.
 
 #include <stdint.h>
+#include <setjmp.h>
 
 #include <drivers/framebuffer.h>
 #include <drivers/keyboard.h>
@@ -20,6 +21,16 @@
 #include "doomkeys.h"
 
 #include <doomgeneric_minidos.h>
+
+// DOOM 종료 훅 (doom/i_system.h). DOOM 헤더 전체를 끌어오면 커널 헤더와
+// 충돌할 수 있어 시그니처만 전방 선언한다.
+//   atexit_func_t = void(*)(void), boolean = unsigned int (doomtype.h) → ABI 동일.
+typedef void (*doom_atexit_func_t)(void);
+extern void I_AtExit(doom_atexit_func_t func, unsigned int run_if_error);
+
+// libc exit() 안전망: DOOM 내부에서 exit()가 호출되면 halt 대신 여기로 복귀(셸).
+// (libc/src/stdlib/exit.c 정의)
+extern void libc_set_exit_jmp(jmp_buf *env);
 
 // ---------------------------------------------------------------------------
 // A. 타이머  (PIT @ 1000Hz 라서 1 tick == 1ms)
@@ -183,19 +194,59 @@ int DG_GetKey(int *pressed, unsigned char *key) {
 }
 
 // ---------------------------------------------------------------------------
-// 진입점
+// 진입점 / 종료
 //   doomgeneric_Create()는 DOOM을 초기화하고 첫 프레임 1틱만 돌린 뒤 *복귀*한다
 //   (doomgeneric 구조: D_DoomLoop이 doomgeneric_Tick을 1회만 호출). 따라서 호스트가
 //   doomgeneric_Tick()을 매 프레임 반복 호출해야 게임이 실제로 진행된다.
-//   이 루프가 없으면 첫 프레임만 그리고 셸로 복귀해 버린다.
-//   IWAD(doom1.wad)는 부팅 시 GRUB 모듈로 적재되어 libc 모듈 레지스트리에 등록돼
-//   있어야 한다 (kmain의 libc_register_module). -iwad로 그 이름을 지정한다.
+//
+//   종료(메뉴 Quit)→셸 복귀 처리:
+//   DOOM은 종료 시 I_Quit()/I_Error()에서 I_AtExit로 등록된 핸들러들을 실행한다.
+//   (정작 exit() 호출은 doom/config.h의 ORIGCODE가 #undef이라 컴파일에서 빠져 있어
+//    원래는 종료해도 함수가 그냥 return → 망가진 상태로 틱이 계속 돌아 멈췄다.)
+//   그래서 longjmp로 run_iwad의 setjmp 지점까지 스택을 되감는 종료 훅을 등록한다.
+//   doomgeneric_Create 이후에 등록 → exit_funcs 맨 앞 → I_Quit 루프에서 *가장 먼저*
+//   실행돼, 다른 셧다운 핸들러가 무엇을 하든 확실히 셸로 빠져나온다.
+//
+//   IWAD는 부팅 시 GRUB 모듈로 적재되어 libc 모듈 레지스트리에 등록돼 있어야 한다
+//   (kmain의 libc_register_module). -iwad로 그 이름을 지정한다.
 // ---------------------------------------------------------------------------
-void doom_run(void) {
-	char *argv[] = { "doom", "-iwad", "doom1.wad" };
+static jmp_buf s_doom_exit;		// run_iwad 복귀 지점
+
+static void minidos_exit_hook(void) {
+	longjmp(s_doom_exit, 1);	// DOOM 호출 스택을 통째로 되감아 run_iwad로 복귀
+}
+
+static void run_iwad(const char *iwad) {
+	if (setjmp(s_doom_exit) != 0) {
+		// === DOOM 종료 후 복귀 지점 ===
+		libc_set_exit_jmp((void *)0);	// exit() 안전망 해제 (셸에서의 exit는 정상 halt)
+		// 키보드 IRQ는 두 버퍼를 채운다: DOOM이 읽는 이벤트 큐(keyboard_poll_event)와
+		// 셸이 읽는 ASCII 링버퍼(keyboard_dequeue). 종료 확인키(y/Enter 등)가 셸 입력으로
+		// 새지 않도록 *둘 다* 비운다. (ASCII는 키 눌림에만 적재되므로 1회 드레인으로 충분)
+		uint8_t sc, pr, ext;
+		while (keyboard_poll_event(&sc, &pr, &ext)) { }
+		while (keyboard_dequeue() != '\0') { }
+		serial_write("[doom] quit -> return to shell\r\n");
+		return;			// 셸(shell_wait)로 복귀
+	}
+
+	// exit() 안전망: DOOM이 (어떤 핸들러에서든) exit()를 부르면 halt 대신 위 지점으로 복귀.
+	libc_set_exit_jmp(&s_doom_exit);
+
+	char *argv[] = { "doom", "-iwad", (char *)iwad };
 	doomgeneric_Create(3, argv);
 
-	// 게임 루프: 호스트가 프레임마다 틱을 돌린다 (복귀하지 않음)
+	// 종료 훅을 *매 실행* 등록한다. doomgeneric_Create(=D_DoomMain)가 실행마다 DOOM
+	// 종료 핸들러들을 exit_funcs 앞에 다시 쌓으므로, 그 직후 등록해야 우리 훅이 항상
+	// 맨 앞(I_Quit 루프에서 가장 먼저 실행)에 온다. 재실행 시 한 번만 등록하면 우리 훅이
+	// 뒤로 밀려, DOOM 핸들러 중 exit()를 호출하는 것이 먼저 돌아 멈췄다(재실행 종료 멈춤).
+	I_AtExit(minidos_exit_hook, 1u);	// run_if_error=참 → I_Error 경로도 커버
+
+	// 게임 루프: 호스트가 프레임마다 틱을 돌린다.
+	// 종료 시에는 minidos_exit_hook의 longjmp로 위 setjmp 지점으로 점프한다.
 	for (;;)
 		doomgeneric_Tick();
 }
+
+void doom_run(void)  { run_iwad("doom.wad"); }		// Ultimate DOOM
+void doom2_run(void) { run_iwad("doom2.wad"); }		// DOOM II
