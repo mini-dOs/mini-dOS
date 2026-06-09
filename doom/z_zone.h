@@ -62,6 +62,10 @@ void    Z_ChangeUser(void *ptr, void **user);
 int     Z_FreeMemory (void);
 unsigned int Z_ZoneSize(void);
 
+// mini-dOS 포팅: zone 전체를 해제한다(DOOM 종료 후 재실행을 위해).
+// 다음 Z_Init이 새 zone을 다시 잡는다.
+void    Z_Shutdown (void);
+
 //
 // This is used to get the local FILE:LINE info from CPP
 // prior to really call the function in question.

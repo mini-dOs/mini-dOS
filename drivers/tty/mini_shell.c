@@ -191,7 +191,7 @@ void shell_wait() {
 	else if ((args = match_cmd(line, "free"))     != (void*)0) cmd_free(args);
 	else if ((args = match_cmd(line, "reboot"))   != (void*)0) cmd_reboot();
 	else if ((args = match_cmd(line, "poweroff")) != (void*)0) cmd_poweroff();
-	else if (strcmp(line, "doom") == 0) doom_run();
+	else if (strcmp(line, "doom") == 0) { doom_run(); cmd_clear(); }	// DOOM 종료 후 화면(배경색·커서) 복원
 	else shell_println("command not found");
 }
 

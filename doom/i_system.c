@@ -243,26 +243,44 @@ void I_BindVariables(void)
 // I_Quit
 //
 
+// ===== AI-GENERATED (Claude) BEGIN =====
+// mini-dOS 포팅: DOOM에는 프로세스 모델이 없어 원래의 exit(0)은 머신을 정지시킨다.
+// 대신 호스트 게임 루프(glue의 doom_run)에 "종료 요청" 플래그만 올리고 즉시 복귀한다.
+// 여기서 exit_funcs(예: I_ShutdownGraphics → Z_Free(I_VideoBuffer))를 돌리면, 아직
+// 진행 중이던 현재 틱의 나머지(D_Display 등)가 해제된 버퍼를 건드리므로 돌리지 않는다.
+// 실제 정리는 doom_run이 루프를 빠져나온 뒤 I_DoomShutdown()에서 한 번에 수행한다.
 void I_Quit (void)
 {
-    atexit_listentry_t *entry;
+    extern volatile int dg_quit_requested;
+    dg_quit_requested = 1;
+}
 
-    // Run through all exit functions
- 
-    entry = exit_funcs; 
-
+// mini-dOS 포팅: DOOM 종료 후 셸 복귀 및 "doom" 재실행을 위한 1회 teardown.
+// DOOM 런타임 상태의 대부분은 zone(mainzone) 안에 할당되므로 zone을 통째로 해제하면
+// 그 안의 모든 것(I_VideoBuffer 포함)이 사라진다. zone 밖에서 실행마다 누적되는 전역만
+// 따로 리셋한다: atexit 리스트와 WAD 디렉터리(lumpinfo/numlumps).
+void I_DoomShutdown (void)
+{
+    // 1) atexit 리스트 비우기 — 매 실행마다 누적되고, 다음 실행 땐 해제된 zone을 가리킨다.
+    atexit_listentry_t *entry = exit_funcs;
     while (entry != NULL)
     {
-        entry->func();
-        entry = entry->next;
+        atexit_listentry_t *next = entry->next;
+        free (entry);
+        entry = next;
     }
+    exit_funcs = NULL;
 
-#if ORIGCODE
-    SDL_Quit();
+    // 2) WAD 디렉터리 리셋 — lumpinfo(append-realloc)와 lumphash(이전 zone의 stale
+    //    포인터)를 비운다. lumphash를 안 비우면 다음 W_AddFile이 그걸 Z_Free하다가
+    //    "freed a pointer without ZONEID"로 죽는다. W가 자기 static을 소유하므로 위임한다.
+    W_Shutdown ();
 
-    exit(0);
-#endif
+    // 3) zone 통째 해제 — I_VideoBuffer 등 zone 내부 할당이 전부 함께 사라진다.
+    Z_Shutdown ();
+    I_VideoBuffer = NULL;   // zone과 함께 해제됨; 다음 실행의 I_InitGraphics 전까지 dangling 방지
 }
+// ===== AI-GENERATED (Claude) END ======
 
 #if !defined(_WIN32) && !defined(__MACOSX__) && !defined(__DJGPP__)
 #define ZENITY_BINARY "/usr/bin/zenity"

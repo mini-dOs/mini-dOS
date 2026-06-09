@@ -10,6 +10,7 @@
 // 이 파일은 *커널 쪽*(glue/)에 두어 커널 헤더와 doomgeneric.h를 동시에 본다.
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <drivers/framebuffer.h>
 #include <drivers/keyboard.h>
@@ -191,11 +192,30 @@ int DG_GetKey(int *pressed, unsigned char *key) {
 //   IWAD(doom1.wad)는 부팅 시 GRUB 모듈로 적재되어 libc 모듈 레지스트리에 등록돼
 //   있어야 한다 (kmain의 libc_register_module). -iwad로 그 이름을 지정한다.
 // ---------------------------------------------------------------------------
+// ===== AI-GENERATED (Claude) BEGIN =====
+// 호스트 종료 요청 플래그. DOOM 메뉴 Quit → I_Quit이 1로 올리면 아래 루프가 빠져나온다.
+volatile int dg_quit_requested = 0;
+
 void doom_run(void) {
 	char *argv[] = { "doom", "-iwad", "doom1.wad" };
+
+	dg_quit_requested = 0;			// 재실행 대비 초기화
 	doomgeneric_Create(3, argv);
 
-	// 게임 루프: 호스트가 프레임마다 틱을 돌린다 (복귀하지 않음)
-	for (;;)
+	// 게임 루프: I_Quit이 종료 플래그를 올릴 때까지 매 프레임 틱.
+	// (Quit한 그 틱의 나머지는 아직 살아있는 버퍼 위에서 무해하게 끝나고 복귀한다.)
+	while (!dg_quit_requested)
 		doomgeneric_Tick();
+
+	// ── 종료 정리: 셸로 깨끗이 복귀 + 다음 "doom" 재실행이 가능하도록 ──
+	I_DoomShutdown();			// zone/lumpinfo/atexit 해제 (doom 측 상태)
+	if (DG_ScreenBuffer) {			// glue가 매 실행 malloc하는 프레임 버퍼
+		free(DG_ScreenBuffer);
+		DG_ScreenBuffer = NULL;
+	}
+	while (keyboard_dequeue() != '\0')	// 셸로 새어나갈 잔여 키 입력 비우기
+		;
+	serial_write("[doom] quit -> shell\r\n");	// 종료/복귀 진단 마커
+	// 화면 복원(배경색·커서)은 셸 소관이므로 호출부(mini_shell)가 doom_run 복귀 후 처리한다.
 }
+// ===== AI-GENERATED (Claude) END ======
