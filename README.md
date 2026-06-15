@@ -1,87 +1,76 @@
 # mini-dOs
 
-x86_64 아키텍처를 대상으로 하는 **미니 운영체제 커널 프로젝트**입니다.
-GRUB + Multiboot2를 사용해 부팅하며, Long Mode로 진입한 뒤 C 커널로 제어를 전달합니다.
-
-현재 목표:
-
-* GRUB 기반 부팅
-* x86_64 Long Mode 진입
-* GDT / IDT / 페이징 / PMM / VMM / Slab / vmalloc
-* DOOM 포팅 (진행 중)
+> 직접 만든 커널 위에서 DOOM을 돌린다.
 
 ---
 
-# 📂 프로젝트 구조 (Project Structure)
+## 👥 팀원
 
-리눅스 트리를 본떠, *서브시스템별로 top-level에* 배치합니다 (`src/` wrapper 없음).
+| 학번 | 이름 | GitHub |
+|------|------|--------|
+| 32210**7 | 김보겸 (팀장) | [@bogamie](https://github.com/bogamie) |
+| 32214**2 | 최승원 | [@SeungwonChoi-kr](https://github.com/SeungwonChoi-kr) |
+
+---
+
+## 📌 프로젝트 소개
+
+mini-dOs는 x86-64 아키텍처를 대상으로 한 미니 운영체제 커널 프로젝트입니다.
+GRUB + Multiboot2로 부팅해 Long Mode에 진입하고, 자체 메모리 관리자(PMM / Slab / VMM), 인터럽트 서브시스템, 프레임버퍼 기반 콘솔을 갖춥니다.
+
+쇼케이스 목표는 **DOOM을 커널 위에서 직접 실행**하는 것 — WAD 파일 로딩부터 화면 출력, 키 입력, 타이머까지 전부 커널 서비스로 연결합니다.
+
+---
+
+## 🛠 기술 스택
+
+| 구분 | 상세 |
+|------|------|
+| 아키텍처 | x86-64 |
+| 언어 | C + GAS (GNU Assembler) |
+| 부트로더 | GRUB 2 + Multiboot2 |
+| 크로스 컴파일러 | x86_64-elf-gcc (`/opt/cross/bin/`) |
+| 에뮬레이터 | QEMU |
+| 개발 환경 | Ubuntu 22.04 |
+
+---
+
+## 📂 프로젝트 구조
+
+Linux 트리를 본떠 서브시스템별로 최상위에 배치합니다 (`src/` wrapper 없음).
 
 ```
 .
 ├── arch/
 │   └── x86_64/
-│       ├── boot/                  # boot.s (Multiboot2 → Long Mode)
-│       ├── gdt/                   # GDT / TSS 초기화
-│       └── interrupt/             # IDT, ISR 스텁, 8259 PIC
-├── drivers/                       # 디바이스 드라이버 (카테고리별)
-│   ├── input/                     # i8042 (PS/2 컨트롤러), 키보드
-│   ├── tty/                       # 시리얼 (UART 16550)
-│   └── video/                     # 프레임버퍼, 폰트
+│       ├── boot/          # boot.s (Multiboot2 → Long Mode)
+│       ├── gdt/           # GDT / TSS 초기화
+│       └── interrupt/     # IDT, ISR 스텁, 8259 PIC
+├── drivers/               # 디바이스 드라이버
+│   ├── input/             # i8042 (PS/2), 키보드
+│   ├── tty/               # 시리얼(UART 16550), 콘솔, 미니 쉘
+│   └── video/             # 프레임버퍼, 폰트
+├── glue/                  # DOOM ↔ 커널 플랫폼 글루
 ├── init/
-│   └── kmain.c                    # 부팅 진입점
-├── kernel/                        # 아키텍처 무관 커널 핵심
-│                                  #   multiboot, irq, exception, pit, early_alloc, ...
-├── mm/                            # 메모리 관리 (paging, pmm, vmm, slab, vmalloc)
-├── libc/                          # POSIX 스타일 shim 레이어 (DOOM용)
-│   ├── include/                   # stdio.h, stdlib.h, string.h, ...
-│   └── src/                       # 구현
-├── doom/                          # vendored ozkl/doomgeneric (포팅 진행 중)
-├── include/                       # 커널 공용 헤더 (네임스페이스별)
-│   ├── asm/                       # x86 specific (cpu, gdt, idt, irq, pic, interrupt)
-│   ├── kernel/                    # arch-neutral (multiboot, kernel_base, pit, ...)
-│   ├── drivers/                   # 디바이스 헤더
-│   └── mm/                        # 메모리 헤더
-├── isodir/
-│   └── boot/grub/grub.cfg
+│   └── kmain.c            # 부팅 진입점
+├── kernel/                # 아키텍처 무관 커널 핵심
+├── mm/                    # 메모리 관리 (PMM, VMM, Slab, vmalloc)
+├── libc/                  # POSIX shim 레이어 (DOOM용)
+│   ├── include/
+│   └── src/
+├── doom/                  # vendored ozkl/doomgeneric
+├── include/               # 커널 공용 헤더
+│   ├── asm/               # x86 전용
+│   ├── kernel/            # arch-neutral
+│   ├── drivers/
+│   └── mm/
 ├── linker.ld
 └── Makefile
 ```
 
 ---
 
-# 헤더 네임스페이스 규칙
-
-include 경로만 봐도 헤더의 *정체*가 보이게 설계:
-
-| Include 형태 | 의미 | 예 |
-| --- | --- | --- |
-| `<asm/foo.h>` | x86 전용. 다른 arch 포팅 시 갈아엎음 | `<asm/cpu.h>`, `<asm/idt.h>` |
-| `<kernel/foo.h>` | arch-neutral 커널 서비스 API | `<kernel/multiboot.h>`, `<kernel/pit.h>` |
-| `<drivers/foo.h>` | 일반 디바이스 드라이버 | `<drivers/framebuffer.h>` |
-| `<mm/foo.h>` | 메모리 관리 | `<mm/vmm.h>` |
-| `<stdio.h>` 등 | libc shim (DOOM 및 일부 커널 — `<string.h>`) | `<string.h>`, `<stdio.h>` |
-
-Makefile은 빌드 대상별로 include path를 다르게 줘서 **DOOM이 커널 internal을 import 못하게 강제**합니다 — DOOM ↔ 커널 경계는 `doom/doomgeneric.h`의 4개 콜백 (`DG_DrawFrame`, `DG_GetKey`, `DG_GetTicksMs`, `DG_SleepMs`)만 통과하는 구조.
-
----
-
-# 빌드 시스템
-
-| 파일 | 역할 |
-| --- | --- |
-| **Makefile** | 빌드 자동화. `arch/`, `drivers/`, `init/`, `kernel/`, `mm/`, `libc/src/`, `doom/` 하위의 `.c`/`.S`/`.s` 자동 수집 |
-| **linker.ld** | 커널 메모리 레이아웃 정의 |
-
-빌드 결과물:
-
-```
-build/kernel.elf
-build/myos.iso
-```
-
----
-
-# 부팅 과정 (Boot Flow)
+## 🚀 부팅 과정
 
 ```
 GRUB
@@ -97,71 +86,91 @@ PAE / EFER.LME / Paging 활성화 → Long Mode 진입
 Higher-half 가상 주소로 전환
   ↓
 init/kmain.c — kmain() 실행
+  ↓
+미니 쉘 루프
 ```
 
 ---
 
-# 실행 방법
+## 🔧 빌드 & 실행
 
-## 빌드
-
-```
-make
-```
-
-## ISO 생성
-
-```
-make iso
+```bash
+make            # 빌드 (build/kernel.elf)
+make iso        # ISO 생성 (build/myos.iso)
+make run        # QEMU 실행
+make run-debug  # QEMU + gdb stub :1234
 ```
 
-## QEMU 실행
-
-```
-make run
-```
-
-## 디버그 (gdb stub :1234)
-
-```
-make run-debug
-```
-
----
-
-# 개발 환경
-
-권장 환경:
+**권장 환경:**
 
 ```
 Ubuntu 22.04
-x86_64-elf-gcc      (cross-compiler at /opt/cross/bin/)
-QEMU
-GRUB
-clangd
+x86_64-elf-gcc  (/opt/cross/bin/)
+QEMU, GRUB, clangd
 ```
 
 ---
 
-# 현재 구현 상태
+## 🐚 미니 쉘
 
-* [x] Multiboot2 부팅
-* [x] Long Mode 전환
-* [x] GDT / TSS 초기화
-* [x] Higher-half 커널 (가상 주소 `0xFFFFFFFF80000000`)
-* [x] 페이징 (4KB / 2MB 페이지, PML4 기반)
-* [x] 물리 메모리 관리 (Buddy PMM, 4KB–4MB)
-* [x] Direct-map (`0xFFFF888000000000`)
-* [x] IDT 구현
-* [x] PIC (8259A) 초기화
-* [x] 인터럽트 / 예외 처리 (ISR 스텁 + C 핸들러)
-* [x] 시리얼 콘솔 (COM1)
-* [x] PS/2 키보드 드라이버
-* [x] 가상 메모리 관리 (VMM, ownership-aware)
-* [x] Slab 할당자 (8B–2KB, 9개 캐시)
-* [x] vmalloc (linked-list, first-fit)
-* [x] 트리 구조 리팩토링 (Linux 풍 서브시스템 레이아웃)
-* [ ] DOOM 포팅 (libc shim 구현 + Multiboot2 module 로딩 + 8bpp→32bpp blit)
-* [ ] 프로세스 / 스케줄러
-* [ ] 시스템 콜
-* [ ] 파일 시스템
+부팅 후 `kmain()`에서 쉘 루프가 시작됩니다.
+
+```
+dOS:~$
+```
+
+| 명령어 | 설명 |
+|--------|------|
+| `clear` | 화면 초기화 |
+| `doom` | DOOM 실행 (종료 시 쉘로 복귀) |
+| `echo [...]` | 인자 출력 |
+| `free [-m\|-g]` | 메모리 사용량 (KiB / MiB / GiB) |
+| `help` | 명령어 목록 |
+| `poweroff` | QEMU/Bochs 종료 |
+| `reboot` | 재부팅 |
+| `uname [-a]` | 시스템 이름 출력 |
+| `uptime` | 부팅 후 경과 시간 |
+| `whoami` | 현재 사용자 출력 |
+
+---
+
+## 📐 헤더 네임스페이스
+
+include 경로만 봐도 헤더의 정체가 드러나도록 설계했습니다.
+
+| Include | 의미 | 예 |
+|---------|------|----|
+| `<asm/foo.h>` | x86 전용 (다른 아키텍처 포팅 시 교체) | `<asm/cpu.h>`, `<asm/idt.h>` |
+| `<kernel/foo.h>` | arch-neutral 커널 서비스 | `<kernel/pit.h>`, `<kernel/multiboot.h>` |
+| `<drivers/foo.h>` | 디바이스 드라이버 | `<drivers/framebuffer.h>` |
+| `<mm/foo.h>` | 메모리 관리 | `<mm/vmm.h>`, `<mm/pmm.h>` |
+| `<stdio.h>` 등 | libc shim (DOOM 및 일부 커널용) | `<string.h>`, `<stdio.h>` |
+
+DOOM은 `glue/` 레이어를 통해서만 커널과 통신합니다. 경계를 넘는 것은 6개 콜백(`DG_DrawFrame`, `DG_GetKey`, `DG_GetTicksMs`, `DG_SleepMs` 등)뿐입니다.
+
+---
+
+## ✅ 구현 상태
+
+- [x] Multiboot2 부팅
+- [x] Long Mode 전환
+- [x] GDT / TSS 초기화
+- [x] Higher-half 커널 (가상 주소 `0xFFFFFFFF80000000`)
+- [x] 페이징 (4KB / 2MB 페이지, PML4 기반)
+- [x] 물리 메모리 관리 (Buddy PMM, 4KB–4MB)
+- [x] Direct-map (`0xFFFF888000000000`)
+- [x] IDT 구현
+- [x] PIC (8259A) 초기화
+- [x] 인터럽트 / 예외 처리 (ISR 스텁 + C 핸들러)
+- [x] 시리얼 콘솔 (COM1)
+- [x] PS/2 키보드 드라이버
+- [x] 가상 메모리 관리 (VMM, ownership-aware)
+- [x] Slab 할당자 (8B–2KB, 9개 캐시)
+- [x] vmalloc (linked-list, first-fit)
+- [x] libc shim (stdio, stdlib, string 등)
+- [x] 프레임버퍼 콘솔 (GOP 기반, 8×8 비트맵 폰트)
+- [x] 미니 쉘 (내장 명령어 10종)
+- [x] DOOM 포팅 (WAD 로딩, 화면 출력, 키 입력, 타이머, 종료 후 쉘 복귀)
+- [ ] 프로세스 / 스케줄러
+- [ ] 시스템 콜
+- [ ] 파일 시스템 (VFS + FAT32)
