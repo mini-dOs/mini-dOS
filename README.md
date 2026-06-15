@@ -24,16 +24,16 @@
   <th>담당</th>
 </tr>
 <tr>
-  <td align="center" nowrap>김보겸</td>
+  <td align="center" nowrap>김보겸 (팀장)</td>
   <td align="center">32210**7</td>
   <td align="center"><a href="https://github.com/bogamie">@bogamie</a></td>
-  <td>팀장 · 부트로더 및 커널 진입(Multiboot2 → Long Mode) · GDT/TSS · IDT 및 인터럽트 서브시스템 · 페이징(PML4 · Higher-half · Direct-map) · PMM(Buddy) · VMM · vmalloc · libc shim 전반</td>
+  <td>부트로더 및 커널 진입(Multiboot2 → Long Mode) · GDT/TSS · IDT 및 인터럽트 서브시스템 · 페이징(PML4 · Higher-half · Direct-map) · VMM · vmalloc · libc shim 전반 · PIT 틱 카운터</td>
 </tr>
 <tr>
   <td align="center" nowrap>최승원</td>
   <td align="center">32214**2</td>
   <td align="center"><a href="https://github.com/SeungwonChoi-kr">@SeungwonChoi-kr</a></td>
-  <td>Slab 할당자 · GOP 프레임버퍼 및 비트맵 폰트 · 콘솔 드라이버 · 미니 쉘 · PS/2 키보드(Ring Buffer · shift/caps_lock) · DOOM glue 레이어(DG_* 6종) · PIT 틱 카운터 · WAD 로딩</td>
+  <td>Buddy 할당자 · Slab 할당자 · GOP 프레임버퍼 및 비트맵 폰트 · 콘솔 드라이버 · 미니 쉘 · PS/2 키보드(Ring Buffer · shift/caps_lock) · DOOM glue 레이어(DG_* 6종) · WAD 로딩</td>
 </tr>
 </table>
 
