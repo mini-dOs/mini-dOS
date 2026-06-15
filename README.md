@@ -1,41 +1,117 @@
-# mini-dOs
+<div align="center">
 
-> 직접 만든 커널 위에서 DOOM을 돌린다.
+<h1>mini-dOS</h1>
 
----
+<p><b>직접 만든 커널 위에서 DOOM을 돌린다</b></p>
 
-## 👥 팀원
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=black)
+![Assembly](https://img.shields.io/badge/GAS_Assembly-6E4C13?style=flat-square)
+![x86-64](https://img.shields.io/badge/x86--64-0071C5?style=flat-square&logo=intel&logoColor=white)
+![GRUB](https://img.shields.io/badge/GRUB_2_Multiboot2-555555?style=flat-square)
+![QEMU](https://img.shields.io/badge/QEMU-FF6600?style=flat-square&logo=qemu&logoColor=white)
 
-| 학번 | 이름 | GitHub |
-|------|------|--------|
-| 32210**7 | 김보겸 (팀장) | [@bogamie](https://github.com/bogamie) |
-| 32214**2 | 최승원 | [@SeungwonChoi-kr](https://github.com/SeungwonChoi-kr) |
-
----
-
-## 📌 프로젝트 소개
-
-mini-dOs는 x86-64 아키텍처를 대상으로 한 미니 운영체제 커널 프로젝트입니다.
-GRUB + Multiboot2로 부팅해 Long Mode에 진입하고, 자체 메모리 관리자(PMM / Slab / VMM), 인터럽트 서브시스템, 프레임버퍼 기반 콘솔을 갖춥니다.
-
-쇼케이스 목표는 **DOOM을 커널 위에서 직접 실행**하는 것 — WAD 파일 로딩부터 화면 출력, 키 입력, 타이머까지 전부 커널 서비스로 연결합니다.
+</div>
 
 ---
 
-## 🛠 기술 스택
+## 팀원
 
-| 구분 | 상세 |
-|------|------|
-| 아키텍처 | x86-64 |
-| 언어 | C + GAS (GNU Assembler) |
-| 부트로더 | GRUB 2 + Multiboot2 |
-| 크로스 컴파일러 | x86_64-elf-gcc (`/opt/cross/bin/`) |
-| 에뮬레이터 | QEMU |
-| 개발 환경 | Ubuntu 22.04 |
+<table>
+<tr>
+  <th align="center">이름</th>
+  <th align="center">학번</th>
+  <th align="center">GitHub</th>
+  <th>담당</th>
+</tr>
+<tr>
+  <td align="center" nowrap>김보겸 (팀장)</td>
+  <td align="center">32210**7</td>
+  <td align="center"><a href="https://github.com/bogamie">@bogamie</a></td>
+  <td>부트로더 및 커널 진입(Multiboot2 → Long Mode) · GDT/TSS · IDT 및 인터럽트 서브시스템 · 페이징(PML4 · Higher-half · Direct-map) · VMM · vmalloc · libc shim 전반 · PIT 틱 카운터</td>
+</tr>
+<tr>
+  <td align="center" nowrap>최승원</td>
+  <td align="center">32214**2</td>
+  <td align="center"><a href="https://github.com/SeungwonChoi-kr">@SeungwonChoi-kr</a></td>
+  <td>Buddy 할당자 · Slab 할당자 · GOP 프레임버퍼 및 비트맵 폰트 · 콘솔 드라이버 · 미니 쉘 · PS/2 키보드(Ring Buffer · shift/caps_lock) · DOOM glue 레이어(DG_* 6종) · WAD 로딩</td>
+</tr>
+</table>
 
 ---
 
-## 📂 프로젝트 구조
+## 왜 만들었나요?
+
+OS 교과서는 페이징, 인터럽트, 메모리 관리를 설명하지만 직접 구현해본 적은 없었습니다.
+
+mini-dOS는 그 질문에서 시작했습니다 — **x86-64 베어메탈 위에 직접 올린 커널로 DOOM(1993)을 돌릴 수 있을까?**
+
+단순한 Hello World 커널이 목표가 아니었습니다. GRUB으로 부팅해 Long Mode에 진입하고, 페이지 테이블을 직접 구축하고, Buddy · Slab · vmalloc 메모리 할당자를 올리고, 인터럽트 핸들러를 등록하고, 프레임버퍼에 픽셀을 그리고, PS/2 키보드 입력을 받아 — 그 위에서 DOOM의 플랫폼 콜백(`DG_DrawFrame`, `DG_GetKey`, `DG_GetTicksMs`, `DG_SleepMs` 등 6종)을 커널 서비스에 연결했습니다.
+
+---
+
+## 시연 영상
+
+<table>
+<tr>
+<td valign="top" width="55%">
+
+<a href="https://youtu.be/Vz4IkK8DZVw">
+<img src="https://img.youtube.com/vi/Vz4IkK8DZVw/maxresdefault.jpg" alt="mini-dOS 시연 영상" width="100%">
+</a>
+
+<br/>
+
+<a href="https://youtu.be/Vz4IkK8DZVw">
+<img src="https://img.shields.io/badge/▶_클릭하여_시청하기-FF0000?style=for-the-badge&logo=youtube&logoColor=white">
+</a>
+
+</td>
+<td valign="top">
+
+| 타임스탬프 | |
+|---|---|
+| `0:00` | `help` |
+| `0:15` | `clear` |
+| `0:22` | `echo` |
+| `0:40` | `free` |
+| `0:50` | `whoami` |
+| `1:02` | `uptime` |
+| `1:13` | `uname` |
+| `1:34` | `poweroff` |
+| `2:05` | `doom` |
+
+</td>
+</tr>
+</table>
+
+---
+
+## 화면
+
+| 미니 쉘 | DOOM |
+|:---:|:---:|
+| <img src="docs/screenshots/shell-help.png" width="380"> | <img src="docs/screenshots/doom.png" width="380"> |
+
+**쉘 명령어**
+
+| `free` | `uname` | `whoami` |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/shell-free.png" width="230"> | <img src="docs/screenshots/shell-uname.png" width="230"> | <img src="docs/screenshots/shell-whoami.png" width="230"> |
+
+---
+
+## 기술 스택
+
+![C](https://img.shields.io/badge/C-A8B9CC?style=for-the-badge&logo=c&logoColor=black)
+![Assembly](https://img.shields.io/badge/GAS_Assembly-6E4C13?style=for-the-badge)
+![x86-64](https://img.shields.io/badge/x86--64-0071C5?style=for-the-badge&logo=intel&logoColor=white)
+![GRUB](https://img.shields.io/badge/GRUB_2_Multiboot2-555555?style=for-the-badge)
+![QEMU](https://img.shields.io/badge/QEMU-FF6600?style=for-the-badge&logo=qemu&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu_22.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+
+---
+
+## 프로젝트 구조
 
 Linux 트리를 본떠 서브시스템별로 최상위에 배치합니다.
 
@@ -70,7 +146,7 @@ Linux 트리를 본떠 서브시스템별로 최상위에 배치합니다.
 
 ---
 
-## 🚀 부팅 과정
+## 부팅 과정
 
 ```
 GRUB
@@ -92,7 +168,7 @@ init/kmain.c — kmain() 실행
 
 ---
 
-## 🔧 빌드 & 실행
+## 빌드 & 실행
 
 ```bash
 make            # 빌드 (build/kernel.elf)
@@ -111,7 +187,7 @@ QEMU, GRUB, clangd
 
 ---
 
-## 🐚 미니 쉘
+## 미니 쉘
 
 부팅 후 `kmain()`에서 쉘 루프가 시작됩니다.
 
@@ -134,7 +210,7 @@ dOS:~$
 
 ---
 
-## 📐 헤더 네임스페이스
+## 헤더 네임스페이스
 
 include 경로만 봐도 헤더의 정체가 드러나도록 설계했습니다.
 
@@ -150,7 +226,7 @@ DOOM은 `glue/` 레이어를 통해서만 커널과 통신합니다. 경계를 �
 
 ---
 
-## ✅ 구현 상태
+## 구현 상태
 
 - [x] Multiboot2 부팅
 - [x] Long Mode 전환
